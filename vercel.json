@@ -1,17 +1,8 @@
 {
-  "version": 2,
-  "routes": [
+  "rewrites": [
     {
-      "src": "/_expo/(.*)",
-      "dest": "/_expo/$1"
-    },
-    {
-      "src": "/assets/(.*)",
-      "dest": "/assets/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/server/index.html"
+      "source": "/(.*)",
+      "destination": "/server/index.html"
     }
   ]
 }
