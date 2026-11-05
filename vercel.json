@@ -1,8 +1,9 @@
 {
-  "routes": [
+  "cleanUrls": true,
+  "rewrites": [
     {
-      "src": "/(.*)",
-      "dest": "/_expo/server/render.js"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
