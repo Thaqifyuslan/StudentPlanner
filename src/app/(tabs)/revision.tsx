@@ -1,7 +1,8 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { SymbolView } from 'expo-symbols';
 import * as Sharing from 'expo-sharing';
-import { useEffect, useState } from 'react';
+import * as WebBrowser from 'expo-web-browser';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   ActivityIndicator,
@@ -28,13 +29,14 @@ type MaterialItem = {
   date: string;
 };
 
-type IconName = 'file' | 'share' | 'upload' | 'delete';
+type IconName = 'file' | 'share' | 'upload' | 'delete' | 'view';
 
 const iconNames = {
   file: { ios: 'doc.text', android: 'description', web: 'description' },
   share: { ios: 'square.and.arrow.up', android: 'share', web: 'share' },
   upload: { ios: 'icloud.and.arrow.up', android: 'cloud_upload', web: 'cloud_upload' },
   delete: { ios: 'trash', android: 'delete', web: 'delete' },
+  view: { ios: 'eye', android: 'visibility', web: 'visibility' },
 } as const;
 
 function MaterialIcon({
@@ -54,11 +56,13 @@ export default function RevisionScreen() {
   const [materials, setMaterials] = useState<MaterialItem[]>([]);
   const [isBusy, setIsBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const loadRequest = useRef(0);
 
   useEffect(() => {
     let active = true;
     const loadMaterials = async () => {
       if (!profile) return;
+      const requestId = ++loadRequest.current;
       try {
         const { data, error } = await supabase
           .from('revisions')
@@ -86,10 +90,12 @@ export default function RevisionScreen() {
             };
           }),
         );
-        if (active) setMaterials(signedMaterials);
+        if (active && requestId === loadRequest.current) setMaterials(signedMaterials);
       } catch (error) {
         console.error('Failed to load revision materials:', error);
-        if (active) setMessage('Could not load revision materials. Check your Supabase connection.');
+        if (active && requestId === loadRequest.current) {
+          setMessage('Could not load revision materials. Check your Supabase connection.');
+        }
       }
     };
 
@@ -180,6 +186,7 @@ export default function RevisionScreen() {
       throw signedUrlError;
     }
 
+    loadRequest.current += 1;
     const newItem: MaterialItem = {
       id: data.id,
       name,
@@ -256,6 +263,16 @@ export default function RevisionScreen() {
       setMessage('Could not share the material. Please try again.');
     } finally {
       setIsBusy(false);
+    }
+  };
+
+  const viewItem = async (item: MaterialItem) => {
+    setMessage(null);
+    try {
+      await WebBrowser.openBrowserAsync(item.uri);
+    } catch (error) {
+      console.error('Failed to open revision material:', error);
+      setMessage('Could not open the material. Please try sharing or downloading it instead.');
     }
   };
 
@@ -360,6 +377,14 @@ export default function RevisionScreen() {
             </View>
 
             <Pressable
+              accessibilityLabel={`View ${item.name}`}
+              accessibilityRole="button"
+              disabled={isBusy}
+              onPress={() => void viewItem(item)}
+              style={({ pressed }) => [styles.viewButton, pressed && styles.pressed]}>
+              <MaterialIcon name="view" size={20} color="#A5B4FC" />
+            </Pressable>
+            <Pressable
               accessibilityLabel={`Share ${item.name}`}
               accessibilityRole="button"
               disabled={isBusy}
@@ -459,8 +484,9 @@ const styles = StyleSheet.create({
   cardInfo: { flex: 1, minWidth: 0, marginLeft: 12 },
   fileName: { fontSize: 14, color: '#FFFFFF', fontWeight: 'bold' },
   fileDate: { fontSize: 11, color: '#8D94B0', marginTop: 3 },
-  shareButton: { padding: 10, marginLeft: 4 },
-  deleteButton: { padding: 10, marginLeft: 2 },
+  viewButton: { padding: 8, marginLeft: 2 },
+  shareButton: { padding: 8, marginLeft: 2 },
+  deleteButton: { padding: 8, marginLeft: 2 },
   pressed: { opacity: 0.65 },
   empty: { alignItems: 'center', padding: 28 },
   emptyText: { color: '#8D94B0', marginTop: 10, fontSize: 13, textAlign: 'center' },
