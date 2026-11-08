@@ -32,7 +32,7 @@ create table if not exists public.tasks (
   tajuk text not null,
   course text not null default '',
   tarikh_luput text not null default current_date::text,
-  due_date text not null default 'Akan Datang',
+  due_date text not null default current_date::text,
   priority text not null default 'High',
   is_done boolean not null default false,
   created_at timestamptz not null default now()
@@ -54,10 +54,10 @@ alter table public.schedules
   add column if not exists kod_kursus text not null default '',
   add column if not exists nama_kursus text not null default '',
   add column if not exists kod_subjek text not null default '',
-  add column if not exists nama_subjek text not null default 'Subjek lama - sila kemas kini',
+  add column if not exists nama_subjek text not null default 'Legacy course - please update',
   add column if not exists masa_mula text not null default '09:00',
   add column if not exists masa_tamat text not null default '10:00',
-  add column if not exists bilik text not null default 'Belum ditetapkan',
+  add column if not exists bilik text not null default 'Not assigned',
   add column if not exists masa text not null default '09:00 AM',
   add column if not exists kod_warna text not null default '#6C5CE7';
 
@@ -80,7 +80,7 @@ alter table public.schedules
 alter table public.tasks
   add column if not exists course text not null default '',
   add column if not exists tarikh_luput text not null default current_date::text,
-  add column if not exists due_date text not null default 'Akan Datang',
+  add column if not exists due_date text not null default current_date::text,
   add column if not exists priority text not null default 'High',
   add column if not exists is_done boolean not null default false;
 

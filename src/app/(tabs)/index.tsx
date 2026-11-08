@@ -6,8 +6,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/auth-context';
 import { usePlanner } from '@/contexts/planner-context';
 
-const MALAY_DAYS = ['Ahad', 'Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat', 'Sabtu'];
-const MALAY_MONTHS = ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'];
+const ENGLISH_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const LEGACY_DAY_NAMES: Record<string, string> = {
+  ahad: 'sunday',
+  isnin: 'monday',
+  selasa: 'tuesday',
+  rabu: 'wednesday',
+  khamis: 'thursday',
+  jumaat: 'friday',
+  sabtu: 'saturday',
+};
 
 export default function HomeScreen() {
   const { profile, signOut } = useAuth();
@@ -15,11 +23,18 @@ export default function HomeScreen() {
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [signOutError, setSignOutError] = useState<string | null>(null);
 
-  const today = MALAY_DAYS[currentDate.getDay()];
-  const todayDate = `${today}, ${currentDate.getDate()} ${MALAY_MONTHS[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+  const today = ENGLISH_DAYS[currentDate.getDay()];
+  const todayDate = new Intl.DateTimeFormat('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(currentDate);
   const classesToday = courses.filter((course) => {
     const courseDay = course.day.split(/[•|,]/, 1)[0].trim();
-    return courseDay.toLocaleLowerCase() === today.toLocaleLowerCase();
+    const normalizedCourseDay =
+      LEGACY_DAY_NAMES[courseDay.toLocaleLowerCase()] ?? courseDay.toLocaleLowerCase();
+    return normalizedCourseDay === today.toLocaleLowerCase();
   });
   const pendingAssignments = assignments.filter((assignment) => assignment.status === 'Pending').length;
 
@@ -33,8 +48,8 @@ export default function HomeScreen() {
       await signOut();
       setSignOutError(null);
     } catch (error) {
-      console.error('Gagal log keluar:', error);
-      setSignOutError('Tidak dapat log keluar. Sila cuba lagi.');
+      console.error('Failed to sign out:', error);
+      setSignOutError('Could not sign out. Please try again.');
     }
   };
 
@@ -45,15 +60,15 @@ export default function HomeScreen() {
       .slice(0, 2)
       .map((part) => part[0]?.toLocaleUpperCase())
       .join('') ??
-    'P';
+    'S';
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.headerText}>
-            <Text style={styles.greeting}>SELAMAT DATANG</Text>
-            <Text style={styles.name}>{profile?.nama ?? profile?.name ?? 'Pelajar'}</Text>
+            <Text style={styles.greeting}>WELCOME</Text>
+            <Text style={styles.name}>{profile?.nama ?? profile?.name ?? 'Student'}</Text>
             {profile?.noMatrik ? (
               <Text style={styles.profileDetails}>
                 {profile.noMatrik}
@@ -72,7 +87,7 @@ export default function HomeScreen() {
               accessibilityRole="button"
               onPress={() => void handleSignOut()}
               style={({ pressed }) => [styles.signOutButton, pressed && styles.pressed]}>
-              <Text style={styles.signOutText}>Keluar</Text>
+              <Text style={styles.signOutText}>Sign out</Text>
             </Pressable>
           </View>
         </View>
@@ -84,22 +99,22 @@ export default function HomeScreen() {
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{isLoading ? '…' : courses.length}</Text>
-            <Text style={styles.statLabel}>Subjek Aktif</Text>
+            <Text style={styles.statLabel}>Active courses</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={[styles.statValue, styles.pendingValue]}>
               {isLoading ? '…' : pendingAssignments}
             </Text>
-            <Text style={styles.statLabel}>Tugasan Pending</Text>
+            <Text style={styles.statLabel}>Pending tasks</Text>
           </View>
         </View>
 
         <View style={styles.sectionHeading}>
           <View>
-            <Text style={styles.sectionTitle}>Kelas Hari Ini</Text>
+            <Text style={styles.sectionTitle}>Today&apos;s Classes</Text>
             <Text style={styles.dateText}>{todayDate}</Text>
           </View>
-          <Link href="/(tabs)/jadual" style={styles.sectionLink}>Jadual</Link>
+          <Link href="/(tabs)/jadual" style={styles.sectionLink}>Schedule</Link>
         </View>
         {classesToday.length > 0 ? (
           classesToday.map((course) => (
@@ -114,13 +129,13 @@ export default function HomeScreen() {
           ))
         ) : (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>Tiada kelas dijadualkan untuk {todayDate}.</Text>
+            <Text style={styles.emptyText}>No classes are scheduled for {todayDate}.</Text>
           </View>
         )}
 
         <Link href="/(tabs)/tugasan" asChild>
           <Pressable style={({ pressed }) => [styles.assignmentLink, pressed && styles.pressed]}>
-            <Text style={styles.assignmentLinkText}>Lihat dan urus tugasan</Text>
+            <Text style={styles.assignmentLinkText}>View and manage tasks</Text>
           </Pressable>
         </Link>
       </ScrollView>

@@ -44,15 +44,15 @@ export function AuthForm({ initialMode }: AuthFormProps) {
   const handleAuth = async () => {
     const normalizedEmail = email.trim().toLocaleLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || !password) {
-      setError('Sila masukkan alamat e-mel yang sah dan kata laluan.');
+      setError('Enter a valid email address and password.');
       return;
     }
     if (password.length < 8) {
-      setError('Kata laluan mesti sekurang-kurangnya 8 aksara.');
+      setError('Password must be at least 8 characters long.');
       return;
     }
     if (isRegister && (!nama.trim() || !noMatrik.trim() || !kursus.trim() || !semester.trim())) {
-      setError('Sila lengkapkan nama, nombor matrik, kursus dan semester.');
+      setError('Please complete your name, student ID, course, and semester.');
       return;
     }
 
@@ -71,7 +71,7 @@ export function AuthForm({ initialMode }: AuthFormProps) {
           kodFakulti,
         });
         if (result.requiresEmailConfirmation) {
-          setNotice('Akaun berjaya didaftarkan. Sahkan alamat e-mel anda sebelum log masuk.');
+          setNotice('Account created. Verify your email address before signing in.');
         } else {
           router.replace('/(tabs)');
         }
@@ -80,8 +80,8 @@ export function AuthForm({ initialMode }: AuthFormProps) {
         router.replace('/(tabs)');
       }
     } catch (authError) {
-      console.error(isRegister ? 'Pendaftaran Supabase gagal:' : 'Log masuk Supabase gagal:', authError);
-      setError(authError instanceof Error ? authError.message : 'Tindakan tidak berjaya. Sila cuba lagi.');
+      console.error(isRegister ? 'Supabase sign-up failed:' : 'Supabase sign-in failed:', authError);
+      setError(authError instanceof Error ? authError.message : 'Something went wrong. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -110,40 +110,40 @@ export function AuthForm({ initialMode }: AuthFormProps) {
                 size={44}
               />
               <Text style={styles.title}>
-                {isRegister ? 'Cipta Akaun Selamat' : 'Log Masuk Pelajar'}
+                {isRegister ? 'Create a Secure Account' : 'Student Sign In'}
               </Text>
               <Text style={styles.subtitle}>
                 {isRegister
-                  ? 'Daftar akaun untuk menyimpan data akademik anda dengan selamat.'
-                  : 'Log masuk untuk mengakses jadual dan tugasan anda.'}
+                  ? 'Create an account to securely save your academic data.'
+                  : 'Sign in to access your schedule and tasks.'}
               </Text>
             </View>
 
-            <Text style={styles.label}>Emel Pelajar</Text>
+            <Text style={styles.label}>Student Email</Text>
             <TextInput
-              accessibilityLabel="Emel pelajar"
+              accessibilityLabel="Student email"
               autoCapitalize="none"
               autoComplete="email"
               editable={!isSubmitting}
               keyboardType="email-address"
               onChangeText={setEmail}
-              placeholder="contoh@student.edu.my"
+              placeholder="student@example.edu"
               placeholderTextColor="#6C7293"
               returnKeyType="next"
               style={styles.input}
               value={email}
             />
 
-            <Text style={styles.label}>Kata Laluan (minimum 8 aksara)</Text>
+            <Text style={styles.label}>Password (at least 8 characters)</Text>
             <View style={styles.passwordWrapper}>
               <TextInput
-                accessibilityLabel="Kata laluan"
+                accessibilityLabel="Password"
                 autoCapitalize="none"
                 autoComplete={isRegister ? 'new-password' : 'current-password'}
                 editable={!isSubmitting}
                 onChangeText={setPassword}
                 onSubmitEditing={() => void handleAuth()}
-                placeholder="Kata laluan"
+                placeholder="Password"
                 placeholderTextColor="#6C7293"
                 returnKeyType="done"
                 secureTextEntry={!showPassword}
@@ -151,7 +151,7 @@ export function AuthForm({ initialMode }: AuthFormProps) {
                 value={password}
               />
               <Pressable
-                accessibilityLabel={showPassword ? 'Sembunyikan kata laluan' : 'Tunjukkan kata laluan'}
+                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
                 accessibilityRole="button"
                 onPress={() => setShowPassword((visible) => !visible)}
                 style={styles.eyeButton}>
@@ -165,23 +165,23 @@ export function AuthForm({ initialMode }: AuthFormProps) {
 
             {isRegister && (
               <>
-                <Text style={styles.label}>Nama Penuh Pelajar</Text>
+                <Text style={styles.label}>Full Name</Text>
                 <TextInput
-                  accessibilityLabel="Nama penuh pelajar"
+                  accessibilityLabel="Full name"
                   autoCapitalize="words"
                   autoComplete="name"
                   editable={!isSubmitting}
                   onChangeText={setNama}
-                  placeholder="Nama penuh"
+                  placeholder="Full name"
                   placeholderTextColor="#6C7293"
                   style={styles.input}
                   value={nama}
                 />
                 <View style={styles.row}>
                   <View style={styles.rowField}>
-                    <Text style={styles.label}>No. Matrik</Text>
+                    <Text style={styles.label}>Student ID</Text>
                     <TextInput
-                      accessibilityLabel="Nombor matrik"
+                      accessibilityLabel="Student ID"
                       autoCapitalize="characters"
                       editable={!isSubmitting}
                       onChangeText={setNoMatrik}
@@ -205,24 +205,24 @@ export function AuthForm({ initialMode }: AuthFormProps) {
                     />
                   </View>
                 </View>
-                <Text style={styles.label}>Kursus / Program</Text>
+                <Text style={styles.label}>Course / Program</Text>
                 <TextInput
-                  accessibilityLabel="Kursus atau program"
+                  accessibilityLabel="Course or program"
                   autoCapitalize="words"
                   editable={!isSubmitting}
                   onChangeText={setKursus}
-                  placeholder="Diploma Sains Komputer"
+                  placeholder="Diploma in Computer Science"
                   placeholderTextColor="#6C7293"
                   style={styles.input}
                   value={kursus}
                 />
-                <Text style={styles.label}>Kod Fakulti / Jabatan (pilihan)</Text>
+                <Text style={styles.label}>Faculty / Department Code (optional)</Text>
                 <TextInput
-                  accessibilityLabel="Kod fakulti atau jabatan"
+                  accessibilityLabel="Faculty or department code"
                   autoCapitalize="characters"
                   editable={!isSubmitting}
                   onChangeText={setKodFakulti}
-                  placeholder="Contoh: FPK"
+                  placeholder="Example: FPK"
                   placeholderTextColor="#6C7293"
                   style={styles.input}
                   value={kodFakulti}
@@ -242,7 +242,7 @@ export function AuthForm({ initialMode }: AuthFormProps) {
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <Text style={styles.submitButtonText}>
-                  {isRegister ? 'Daftar Akaun Baharu' : 'Log Masuk'}
+                  {isRegister ? 'Create Account' : 'Sign In'}
                 </Text>
               )}
             </Pressable>
@@ -253,7 +253,7 @@ export function AuthForm({ initialMode }: AuthFormProps) {
               onPress={switchMode}
               style={styles.switchButton}>
               <Text style={styles.switchText}>
-                {isRegister ? 'Dah ada akaun? Log masuk di sini' : 'Belum ada akaun? Cipta akaun baharu'}
+                {isRegister ? 'Already have an account? Sign in' : 'New here? Create an account'}
               </Text>
             </Pressable>
           </View>

@@ -8,14 +8,12 @@
     "scheme": "studentplanner",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/images/icon.png"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#462B7C",
+        "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.thaqifyuslan.StudentPlanner"
@@ -29,16 +27,16 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#462B7C",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 150
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Student Planner memerlukan akses kepada gambar yang anda pilih untuk nota revision.",
-          "cameraPermission": "Student Planner memerlukan akses kamera untuk mengambil gambar nota.",
+          "photosPermission": "Student Planner needs access to photos you select for your revision notes.",
+          "cameraPermission": "Student Planner needs camera access to take photos of your notes.",
           "microphonePermission": false
         }
       ],

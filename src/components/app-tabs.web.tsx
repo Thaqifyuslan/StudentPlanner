@@ -26,16 +26,16 @@ export default function AppTabs() {
             <TabButton>CGPA</TabButton>
           </TabTrigger>
           <TabTrigger name="jadual" href="/(tabs)/jadual" asChild>
-            <TabButton>Jadual</TabButton>
+            <TabButton>Schedule</TabButton>
           </TabTrigger>
           <TabTrigger name="revision" href="/(tabs)/revision" asChild>
             <TabButton>Revision</TabButton>
           </TabTrigger>
           <TabTrigger name="tugasan" href="/(tabs)/tugasan" asChild>
-            <TabButton>Tugasan</TabButton>
+            <TabButton>Tasks</TabButton>
           </TabTrigger>
           <TabTrigger name="profile" href="/(tabs)/profile" asChild>
-            <TabButton>Profil</TabButton>
+            <TabButton>Profile</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>

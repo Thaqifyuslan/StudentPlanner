@@ -29,7 +29,7 @@ export default function JadualScreen() {
 
   const handleAddCourse = async () => {
     if (!code.trim() || !name.trim()) {
-      setError('Kod dan nama subjek diperlukan.');
+      setError('Course code and name are required.');
       return;
     }
 
@@ -37,7 +37,7 @@ export default function JadualScreen() {
       await addCourse({
         code: code.trim(),
         name: name.trim(),
-        day: day.trim() || 'Isnin',
+        day: day.trim() || 'Monday',
         room: room.trim() || 'Lab 1',
         startTime,
         endTime,
@@ -51,14 +51,14 @@ export default function JadualScreen() {
       setOpenTimePicker(null);
       setError(null);
     } catch (saveError) {
-      console.error('Gagal menyimpan subjek:', saveError);
+      console.error('Failed to save course:', saveError);
       const message =
         typeof saveError === 'object' &&
         saveError !== null &&
         'message' in saveError &&
         typeof saveError.message === 'string'
           ? saveError.message
-          : 'Subjek tidak dapat disimpan. Sila cuba lagi.';
+          : 'Could not save the course. Please try again.';
       setError(message);
     }
   };
@@ -68,8 +68,8 @@ export default function JadualScreen() {
       await deleteCourse(id);
       setError(null);
     } catch (deleteError) {
-      console.error('Gagal memadam subjek:', deleteError);
-      setError('Subjek tidak dapat dipadam. Sila cuba lagi.');
+      console.error('Failed to delete course:', deleteError);
+      setError('Could not delete the course. Please try again.');
     }
   };
 
@@ -79,49 +79,49 @@ export default function JadualScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
-        <Text style={styles.eyebrow}>PERANCANGAN AKADEMIK</Text>
-        <Text style={styles.title}>Jadual</Text>
+        <Text style={styles.eyebrow}>ACADEMIC PLANNER</Text>
+        <Text style={styles.title}>Schedule</Text>
 
         <View style={styles.formCard}>
-          <Text style={styles.sectionTitle}>Tambah subjek</Text>
+          <Text style={styles.sectionTitle}>Add a Course</Text>
           <TextInput
-            accessibilityLabel="Kod subjek"
+            accessibilityLabel="Course code"
             autoCapitalize="characters"
             onChangeText={setCode}
-            placeholder="Kod subjek (cth: DDWD2713)"
+            placeholder="Course code (e.g. DDWD2713)"
             placeholderTextColor="#737B98"
             style={styles.input}
             value={code}
           />
           <TextInput
-            accessibilityLabel="Nama subjek"
+            accessibilityLabel="Course name"
             onChangeText={setName}
-            placeholder="Nama subjek"
+            placeholder="Course name"
             placeholderTextColor="#737B98"
             style={styles.input}
             value={name}
           />
           <TextInput
-            accessibilityLabel="Hari kelas"
+            accessibilityLabel="Class day"
             onChangeText={setDay}
-            placeholder="Hari (cth: Isnin)"
+            placeholder="Day (e.g. Monday)"
             placeholderTextColor="#737B98"
             style={styles.input}
             value={day}
           />
           <TextInput
-            accessibilityLabel="Bilik kelas"
+            accessibilityLabel="Classroom"
             onChangeText={setRoom}
-            placeholder="Bilik (cth: Lab 2)"
+            placeholder="Room (e.g. Lab 2)"
             placeholderTextColor="#737B98"
             style={styles.input}
             value={room}
           />
           <View style={styles.timePickerGroup}>
-            <Text style={styles.inputLabel}>Masa mula</Text>
+            <Text style={styles.inputLabel}>Start time</Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Pilih masa mula, sekarang ${startTime}`}
+              accessibilityLabel={`Select start time, currently ${startTime}`}
               onPress={() => setOpenTimePicker(openTimePicker === 'start' ? null : 'start')}
               style={styles.timePickerButton}>
               <Text style={styles.timePickerButtonText}>{startTime}</Text>
@@ -158,10 +158,10 @@ export default function JadualScreen() {
             )}
           </View>
           <View style={styles.timePickerGroup}>
-            <Text style={styles.inputLabel}>Masa tamat</Text>
+            <Text style={styles.inputLabel}>End time</Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Pilih masa tamat, sekarang ${endTime}`}
+              accessibilityLabel={`Select end time, currently ${endTime}`}
               onPress={() => setOpenTimePicker(openTimePicker === 'end' ? null : 'end')}
               style={styles.timePickerButton}>
               <Text style={styles.timePickerButtonText}>{endTime}</Text>
@@ -197,7 +197,7 @@ export default function JadualScreen() {
             accessibilityRole="button"
             onPress={() => void handleAddCourse()}
             style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}>
-            <Text style={styles.primaryButtonText}>Simpan subjek</Text>
+            <Text style={styles.primaryButtonText}>Save Course</Text>
           </Pressable>
         </View>
 
@@ -205,10 +205,10 @@ export default function JadualScreen() {
           <Text style={styles.error}>{error ?? storageError}</Text>
         )}
 
-        <Text style={styles.sectionTitle}>Senarai subjek</Text>
-        {isLoading ? <Text style={styles.emptyText}>Memuatkan jadual…</Text> : null}
+        <Text style={styles.sectionTitle}>Courses</Text>
+        {isLoading ? <Text style={styles.emptyText}>Loading schedule…</Text> : null}
         {!isLoading && courses.length === 0 ? (
-          <Text style={styles.emptyText}>Belum ada subjek. Tambah subjek pertama anda di atas.</Text>
+          <Text style={styles.emptyText}>No courses yet. Add your first course above.</Text>
         ) : null}
         {courses.map((course) => (
           <View key={course.id} style={[styles.courseCard, { borderLeftColor: course.color }]}>
@@ -218,11 +218,11 @@ export default function JadualScreen() {
               <Text style={styles.courseMeta}>{course.day} • {course.time} • {course.room}</Text>
             </View>
             <Pressable
-              accessibilityLabel={`Padam ${course.name}`}
+              accessibilityLabel={`Delete ${course.name}`}
               accessibilityRole="button"
               onPress={() => void handleDeleteCourse(course.id)}
               style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}>
-              <Text style={styles.deleteText}>Padam</Text>
+              <Text style={styles.deleteText}>Delete</Text>
             </Pressable>
           </View>
         ))}

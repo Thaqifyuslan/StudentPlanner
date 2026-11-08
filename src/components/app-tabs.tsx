@@ -27,7 +27,7 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="jadual">
-        <NativeTabs.Trigger.Label>Jadual</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Schedule</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'calendar', selected: 'calendar' }}
           md="calendar_month"
@@ -43,14 +43,14 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="tugasan">
-        <NativeTabs.Trigger.Label>Tugasan</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Tasks</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'book', selected: 'book.fill' }}
           md="menu_book"
         />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
-        <NativeTabs.Trigger.Label>Profil</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'person.crop.circle', selected: 'person.crop.circle.fill' }}
           md="account_circle"

@@ -36,23 +36,23 @@ function AppNavigator() {
         await clearLocalSession();
         router.replace('/(auth)/login');
       } catch (error) {
-        console.error('Gagal membersihkan sesi setempat:', error);
+        console.error('Failed to clear the local session:', error);
         setRecoveryError(
-          error instanceof Error ? error.message : 'Sesi tidak dapat dibersihkan. Cuba muat semula halaman.',
+          error instanceof Error ? error.message : 'Could not clear the session. Try refreshing the page.',
         );
       }
     };
 
     return (
       <View style={styles.stateContainer}>
-        <Text style={styles.errorTitle}>Sesi tidak dapat dimuat</Text>
+        <Text style={styles.errorTitle}>Could not load session</Text>
         <Text style={styles.errorMessage}>{initializationError}</Text>
         {recoveryError !== null && <Text style={styles.recoveryError}>{recoveryError}</Text>}
         <Pressable
           accessibilityRole="button"
           onPress={() => void handleReturnToLogin()}
           style={({ pressed }) => [styles.recoveryButton, pressed && styles.recoveryButtonPressed]}>
-          <Text style={styles.recoveryButtonText}>Log masuk semula</Text>
+          <Text style={styles.recoveryButtonText}>Sign in again</Text>
         </Pressable>
       </View>
     );

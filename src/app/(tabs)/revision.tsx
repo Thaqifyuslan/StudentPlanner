@@ -83,7 +83,7 @@ export default function RevisionScreen() {
               uri: signedUrl.signedUrl,
               storagePath: item.file_url,
               type: item.type as MaterialItem['type'],
-              date: new Intl.DateTimeFormat('ms-MY', { dateStyle: 'medium' }).format(
+              date: new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' }).format(
                 new Date(item.created_at),
               ),
             };
@@ -91,8 +91,8 @@ export default function RevisionScreen() {
         );
         if (active) setMaterials(signedMaterials);
       } catch (error) {
-        console.error('Gagal memuat bahan revision:', error);
-        if (active) setMessage('Bahan revision tidak dapat dimuat. Semak sambungan Supabase.');
+        console.error('Failed to load revision materials:', error);
+        if (active) setMessage('Could not load revision materials. Check your Supabase connection.');
       }
     };
 
@@ -124,9 +124,9 @@ export default function RevisionScreen() {
     name: string,
     mimeType?: string | null,
   ) => {
-    if (!profile) throw new Error('Log masuk diperlukan untuk memuat naik bahan.');
+    if (!profile) throw new Error('You must be signed in to upload materials.');
     const response = await fetch(uri);
-    if (!response.ok) throw new Error('Fail bahan tidak dapat dibaca.');
+    if (!response.ok) throw new Error('Could not read the selected file.');
     const fileData = await response.arrayBuffer();
     const nameExtension = name.includes('.') ? name.split('.').pop()?.toLocaleLowerCase() : undefined;
     const mimeExtension = mimeType?.split('/')[1]?.split(';')[0]?.toLocaleLowerCase();
@@ -152,7 +152,7 @@ export default function RevisionScreen() {
       const { error: cleanupError } = await supabase.storage
         .from('revision-materials')
         .remove([storagePath]);
-      if (cleanupError) console.error('Gagal membersihkan muat naik revision yang tidak tersimpan:', cleanupError);
+      if (cleanupError) console.error('Failed to clean up the unsaved revision upload:', cleanupError);
       throw error;
     }
 
@@ -168,8 +168,8 @@ export default function RevisionScreen() {
       const { error: fileCleanupError } = await supabase.storage
         .from('revision-materials')
         .remove([storagePath]);
-      if (recordCleanupError) console.error('Gagal membersihkan rekod revision:', recordCleanupError);
-      if (fileCleanupError) console.error('Gagal membersihkan fail revision:', fileCleanupError);
+      if (recordCleanupError) console.error('Failed to clean up the revision record:', recordCleanupError);
+      if (fileCleanupError) console.error('Failed to clean up the revision file:', fileCleanupError);
       throw signedUrlError;
     }
 
@@ -179,12 +179,12 @@ export default function RevisionScreen() {
       uri: signedUrl.signedUrl,
       storagePath,
       type,
-      date: new Intl.DateTimeFormat('ms-MY', { dateStyle: 'medium' }).format(
+      date: new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' }).format(
         new Date(data.created_at),
       ),
     };
     setMaterials((currentMaterials) => [newItem, ...currentMaterials]);
-    setMessage('Bahan revision berjaya dimuat naik ke cloud.');
+    setMessage('Revision material uploaded successfully.');
   };
 
   const runPickerAction = async (action: () => Promise<void>) => {
@@ -193,8 +193,8 @@ export default function RevisionScreen() {
     try {
       await action();
     } catch (error) {
-      console.error('Gagal memilih bahan revision:', error);
-      setMessage('Tidak dapat membuka pilihan bahan. Sila cuba lagi.');
+      console.error('Failed to select revision material:', error);
+      setMessage('Could not open the file picker. Please try again.');
     } finally {
       setIsBusy(false);
     }
@@ -209,7 +209,7 @@ export default function RevisionScreen() {
 
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
-        await addMaterial(asset.uri, 'image', asset.fileName ?? 'Gambar dari album', asset.mimeType);
+        await addMaterial(asset.uri, 'image', asset.fileName ?? 'Photo from library', asset.mimeType);
       }
     });
 
@@ -218,7 +218,7 @@ export default function RevisionScreen() {
       if (Platform.OS !== 'web') {
         const permission = await ImagePicker.requestCameraPermissionsAsync();
         if (!permission.granted) {
-          setMessage('Kebenaran kamera diperlukan untuk mengambil gambar nota.');
+          setMessage('Camera permission is required to take a photo of your notes.');
           return;
         }
       }
@@ -230,7 +230,7 @@ export default function RevisionScreen() {
 
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
-        await addMaterial(asset.uri, 'image', asset.fileName ?? 'Gambar dari kamera', asset.mimeType);
+        await addMaterial(asset.uri, 'image', asset.fileName ?? 'Photo from camera', asset.mimeType);
       }
     });
 
@@ -252,7 +252,7 @@ export default function RevisionScreen() {
     setIsBusy(true);
     try {
       if (!(await Sharing.isAvailableAsync())) {
-        setMessage('Fungsi kongsi tidak disokong pada peranti ini.');
+        setMessage('Sharing is not supported on this device.');
         return;
       }
       const { data, error } = await supabase.storage
@@ -265,8 +265,8 @@ export default function RevisionScreen() {
         title: item.name,
       });
     } catch (error) {
-      console.error('Gagal berkongsi bahan revision:', error);
-      setMessage('Bahan tidak dapat dikongsi. Sila cuba lagi.');
+      console.error('Failed to share revision material:', error);
+      setMessage('Could not share the material. Please try again.');
     } finally {
       setIsBusy(false);
     }
@@ -290,14 +290,14 @@ export default function RevisionScreen() {
           .from('revision-materials')
           .remove([item.storagePath]);
         if (storageError) {
-          console.error('Bahan revision dipadam tetapi fail cloud gagal dibersihkan:', storageError);
-          setMessage('Rekod dipadam, tetapi fail cloud tidak dapat dibersihkan.');
+          console.error('Revision material was deleted, but its cloud file could not be removed:', storageError);
+          setMessage('The record was deleted, but its cloud file could not be removed.');
         } else {
-          setMessage('Bahan revision berjaya dipadam.');
+          setMessage('Revision material deleted successfully.');
         }
       } catch (error) {
-        console.error('Gagal memadam bahan revision:', error);
-        setMessage('Bahan revision tidak dapat dipadam. Sila cuba lagi.');
+        console.error('Failed to delete revision material:', error);
+        setMessage('Could not delete the revision material. Please try again.');
       } finally {
         setIsBusy(false);
       }
@@ -309,41 +309,41 @@ export default function RevisionScreen() {
     };
 
     if (Platform.OS === 'web') {
-      if (window.confirm(`Padam bahan "${item.name}"?`)) {
+      if (window.confirm(`Delete "${item.name}"?`)) {
         confirmDelete();
       }
       return;
     }
 
-    Alert.alert('Padam bahan', `Adakah anda pasti mahu memadam "${item.name}"?`, [
-      { text: 'Batal', style: 'cancel' },
-      { text: 'Padam', style: 'destructive', onPress: confirmDelete },
+    Alert.alert('Delete material', `Are you sure you want to delete "${item.name}"?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: confirmDelete },
     ]);
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Bahan Revision &amp; Nota</Text>
-        <Text style={styles.subtitle}>Muat naik nota kuliah, dokumen atau gambar kelas.</Text>
+        <Text style={styles.title}>Revision Materials &amp; Notes</Text>
+        <Text style={styles.subtitle}>Upload lecture notes, documents, or class photos.</Text>
       </View>
 
       <View style={styles.uploadOptions}>
         <UploadButton
           icon="camera"
-          label="Kamera"
+          label="Camera"
           disabled={isBusy}
           onPress={() => void takePhoto()}
         />
         <UploadButton
           icon="images"
-          label="Album"
+          label="Gallery"
           disabled={isBusy}
           onPress={() => void pickFromGallery()}
         />
         <UploadButton
           icon="file"
-          label="Fail"
+          label="Files"
           disabled={isBusy}
           onPress={() => void pickDocument()}
         />
@@ -356,7 +356,7 @@ export default function RevisionScreen() {
       )}
       {isBusy && (
         <ActivityIndicator
-          accessibilityLabel="Sedang memproses"
+          accessibilityLabel="Processing"
           color="#A5B4FC"
           style={styles.activityIndicator}
         />
@@ -385,7 +385,7 @@ export default function RevisionScreen() {
             </View>
 
             <Pressable
-              accessibilityLabel={`Kongsi ${item.name}`}
+              accessibilityLabel={`Share ${item.name}`}
               accessibilityRole="button"
               disabled={isBusy}
               onPress={() => void shareItem(item)}
@@ -393,7 +393,7 @@ export default function RevisionScreen() {
               <MaterialIcon name="share" size={20} color="#A5B4FC" />
             </Pressable>
             <Pressable
-              accessibilityLabel={`Padam ${item.name}`}
+              accessibilityLabel={`Delete ${item.name}`}
               accessibilityRole="button"
               disabled={isBusy}
               onPress={() => deleteItem(item)}
@@ -405,7 +405,7 @@ export default function RevisionScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <MaterialIcon name="upload" size={40} color="#6C7293" />
-            <Text style={styles.emptyText}>Belum ada bahan revision yang dimuat naik.</Text>
+            <Text style={styles.emptyText}>No revision materials uploaded yet.</Text>
           </View>
         }
       />

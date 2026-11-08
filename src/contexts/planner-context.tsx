@@ -68,13 +68,27 @@ type TaskRow = {
 
 const PlannerContext = createContext<PlannerContextValue | null>(null);
 
+const LEGACY_DAY_NAMES: Record<string, string> = {
+  ahad: 'Sunday',
+  isnin: 'Monday',
+  selasa: 'Tuesday',
+  rabu: 'Wednesday',
+  khamis: 'Thursday',
+  jumaat: 'Friday',
+  sabtu: 'Saturday',
+};
+
 function mapCourse(row: ScheduleRow): Course {
+  const day = row.hari.trim();
+
   return {
     id: row.id,
     code: row.kod_subjek,
-    name: row.nama_subjek,
-    room: row.bilik,
-    day: row.hari,
+    name: row.nama_subjek === 'Subjek lama - sila kemas kini'
+      ? 'Legacy course - please update'
+      : row.nama_subjek,
+    room: row.bilik === 'Belum ditetapkan' ? 'Not assigned' : row.bilik,
+    day: LEGACY_DAY_NAMES[day.toLocaleLowerCase()] ?? day,
     startTime: row.masa_mula,
     endTime: row.masa_tamat,
     time: `${row.masa_mula} - ${row.masa_tamat}`,
@@ -87,7 +101,7 @@ function mapAssignment(row: TaskRow): Assignment {
     id: row.id,
     title: row.tajuk,
     course: row.course,
-    dueDate: row.due_date,
+    dueDate: row.due_date === 'Akan Datang' ? 'Upcoming' : row.due_date,
     priority: row.priority,
     status: row.is_done ? 'DONE' : 'Pending',
   };
@@ -95,23 +109,23 @@ function mapAssignment(row: TaskRow): Assignment {
 
 function plannerErrorMessage(error: unknown) {
   if (typeof error !== 'object' || error === null) {
-    return 'Data planner tidak dapat dimuat. Semak sambungan Supabase.';
+    return 'Could not load planner data. Check your Supabase connection.';
   }
 
   const details = error as Record<string, unknown>;
   if (details.code === '42703' || details.code === 'PGRST204') {
-    return 'Struktur jadual Supabase belum dikemas kini. Jalankan semula supabase/schema.sql dalam SQL Editor.';
+    return 'The Supabase table schema is out of date. Rerun supabase/schema.sql in the SQL Editor.';
   }
   if (details.code === 'PGRST205' || details.code === '42P01') {
-    return 'Jadual planner Supabase belum disediakan. Jalankan supabase/schema.sql dalam SQL Editor.';
+    return 'The Supabase planner tables are not set up. Run supabase/schema.sql in the SQL Editor.';
   }
   if (details.code === '42501' || details.status === 401 || details.status === 403) {
-    return 'Akses jadual planner ditolak. Semak polisi RLS dan sesi pengguna dalam Supabase.';
+    return 'Access to planner tables was denied. Check Supabase RLS policies and the user session.';
   }
   if (typeof details.message === 'string') {
-    console.error('Ralat planner Supabase:', details.code, details.message);
+    console.error('Supabase planner error:', details.code, details.message);
   }
-  return 'Data planner tidak dapat dimuat. Semak sambungan dan konfigurasi Supabase.';
+  return 'Could not load planner data. Check your Supabase connection and configuration.';
 }
 
 export function PlannerProvider({ children }: { children: ReactNode }) {
@@ -157,7 +171,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
           setStorageError(null);
         })
         .catch((error: unknown) => {
-          console.error('Gagal memuat data planner dari Supabase:', error);
+          console.error('Failed to load planner data from Supabase:', error);
           if (active) setStorageError(plannerErrorMessage(error));
         })
         .finally(() => {
@@ -190,7 +204,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
     async (
       course: Pick<Course, 'code' | 'name' | 'day' | 'room' | 'startTime' | 'endTime'>,
     ) => {
-      if (!userId) throw new Error('Log masuk diperlukan untuk menyimpan jadual.');
+      if (!userId) throw new Error('You must be signed in to save a schedule.');
       const { data, error } = await supabase
         .from('schedules')
         .insert({
@@ -219,7 +233,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
 
   const deleteCourse = useCallback(
     async (id: string) => {
-      if (!userId) throw new Error('Log masuk diperlukan untuk memadam jadual.');
+      if (!userId) throw new Error('You must be signed in to delete a schedule.');
       const { error } = await supabase
         .from('schedules')
         .delete()
@@ -234,7 +248,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
 
   const addAssignment = useCallback(
     async (title: string, course: string, dueDate: string) => {
-      if (!userId) throw new Error('Log masuk diperlukan untuk menyimpan tugasan.');
+      if (!userId) throw new Error('You must be signed in to save a task.');
       const { data, error } = await supabase
         .from('tasks')
         .insert({
@@ -257,7 +271,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
 
   const toggleAssignment = useCallback(
     async (id: string) => {
-      if (!userId) throw new Error('Log masuk diperlukan untuk mengemas kini tugasan.');
+      if (!userId) throw new Error('You must be signed in to update a task.');
       const assignment = assignments.find((item) => item.id === id);
       if (!assignment) return;
       const isDone = assignment.status !== 'DONE';
@@ -277,7 +291,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
 
   const deleteAssignment = useCallback(
     async (id: string) => {
-      if (!userId) throw new Error('Log masuk diperlukan untuk memadam tugasan.');
+      if (!userId) throw new Error('You must be signed in to delete a task.');
       const { error } = await supabase
         .from('tasks')
         .delete()
@@ -321,7 +335,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
 export function usePlanner() {
   const context = useContext(PlannerContext);
   if (context === null) {
-    throw new Error('usePlanner mesti digunakan di dalam PlannerProvider.');
+    throw new Error('usePlanner must be used within PlannerProvider.');
   }
   return context;
 }

@@ -74,7 +74,7 @@ export default function CgpaScreen() {
         if (stored !== null) {
           const parsed: unknown = JSON.parse(stored);
           if (!isSavedCalculator(parsed)) {
-            throw new Error('Data kalkulator yang disimpan tidak sah.');
+            throw new Error('The saved calculator data is invalid.');
           }
           if (active) {
             setPreviousCgpa(parsed.previousCgpa);
@@ -83,8 +83,8 @@ export default function CgpaScreen() {
           }
         }
       } catch (error) {
-        console.error('Gagal memuat data CGPA:', error);
-        if (active) setLoadError('Data CGPA tidak dapat dimuat. Semak storan peranti dan cuba lagi.');
+        console.error('Failed to load CGPA data:', error);
+        if (active) setLoadError('Could not load CGPA data. Check your device storage and try again.');
       } finally {
         if (active) setIsLoaded(true);
       }
@@ -102,8 +102,8 @@ export default function CgpaScreen() {
     void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data))
       .then(() => setSaveError(null))
       .catch((error: unknown) => {
-        console.error('Gagal menyimpan data CGPA:', error);
-        setSaveError('Perubahan CGPA tidak dapat disimpan pada peranti ini.');
+        console.error('Failed to save CGPA data:', error);
+        setSaveError('Could not save CGPA changes on this device.');
       });
   }, [isLoaded, loadError, previousCgpa, previousCredits, subjects]);
 
@@ -117,7 +117,7 @@ export default function CgpaScreen() {
       priorGpa > 4 ||
       priorCreditsValue < 0
     ) {
-      return { error: 'Masukkan CGPA terdahulu antara 0.00 hingga 4.00 dan kredit yang sah.' };
+      return { error: 'Enter a previous CGPA between 0.00 and 4.00, and valid credits.' };
     }
 
     let semesterCredits = 0;
@@ -133,7 +133,7 @@ export default function CgpaScreen() {
       const credits = numericValue(creditsText);
       const gradePoint = numericValue(gradeText);
       if (!name || credits === null || gradePoint === null || credits <= 0 || gradePoint < 0 || gradePoint > 4) {
-        return { error: 'Lengkapkan setiap subjek. Kredit mesti melebihi 0 dan mata gred antara 0.00 hingga 4.00.' };
+        return { error: 'Complete each subject. Credits must be greater than 0 and grade points must be between 0.00 and 4.00.' };
       }
 
       hasSubject = true;
@@ -179,19 +179,19 @@ export default function CgpaScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
-        <Text style={styles.eyebrow}>ALAT AKADEMIK</Text>
-        <Text style={styles.title}>Kalkulator CGPA</Text>
+        <Text style={styles.eyebrow}>ACADEMIC TOOLS</Text>
+        <Text style={styles.title}>CGPA Calculator</Text>
         <Text style={styles.subtitle}>
-          CGPA kumulatif dikira secara berwajaran menggunakan kredit dan mata gred 0.00–4.00.
+          Cumulative GPA is weighted using credits and grade points from 0.00 to 4.00.
         </Text>
 
         <View style={styles.formCard}>
-          <Text style={styles.sectionTitle}>Rekod terdahulu</Text>
+          <Text style={styles.sectionTitle}>Previous Record</Text>
           <View style={styles.row}>
             <View style={styles.field}>
-              <Text style={styles.label}>CGPA terdahulu</Text>
+              <Text style={styles.label}>Previous CGPA</Text>
               <TextInput
-                accessibilityLabel="CGPA terdahulu"
+                accessibilityLabel="Previous CGPA"
                 keyboardType="decimal-pad"
                 onChangeText={setPreviousCgpa}
                 placeholder="0.00"
@@ -201,9 +201,9 @@ export default function CgpaScreen() {
               />
             </View>
             <View style={styles.field}>
-              <Text style={styles.label}>Jumlah kredit terdahulu</Text>
+              <Text style={styles.label}>Previous total credits</Text>
               <TextInput
-                accessibilityLabel="Jumlah kredit terdahulu"
+                accessibilityLabel="Previous total credits"
                 keyboardType="decimal-pad"
                 onChangeText={setPreviousCredits}
                 placeholder="0"
@@ -216,42 +216,42 @@ export default function CgpaScreen() {
         </View>
 
         <View style={styles.sectionHeading}>
-          <Text style={styles.sectionTitle}>Subjek semester ini</Text>
+          <Text style={styles.sectionTitle}>This Semester&apos;s Subjects</Text>
           <Pressable
             accessibilityRole="button"
             onPress={addSubject}
             style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}>
-            <Text style={styles.addButtonText}>+ Subjek</Text>
+            <Text style={styles.addButtonText}>+ Subject</Text>
           </Pressable>
         </View>
 
         {subjects.map((subject, index) => (
           <View key={subject.id} style={styles.subjectCard}>
             <View style={styles.subjectHeading}>
-              <Text style={styles.subjectTitle}>Subjek {index + 1}</Text>
+              <Text style={styles.subjectTitle}>Subject {index + 1}</Text>
               {subjects.length > 1 ? (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Padam subjek ${index + 1}`}
+                  accessibilityLabel={`Delete subject ${index + 1}`}
                   onPress={() => removeSubject(subject.id)}
                   style={styles.removeButton}>
-                  <Text style={styles.removeText}>Padam</Text>
+                  <Text style={styles.removeText}>Delete</Text>
                 </Pressable>
               ) : null}
             </View>
             <TextInput
-              accessibilityLabel={`Nama subjek ${index + 1}`}
+              accessibilityLabel={`Subject name ${index + 1}`}
               onChangeText={(value) => updateSubject(subject.id, 'name', value)}
-              placeholder="Nama atau kod subjek"
+              placeholder="Subject name or code"
               placeholderTextColor="#737B98"
               style={styles.input}
               value={subject.name}
             />
             <View style={styles.row}>
               <View style={styles.field}>
-                <Text style={styles.label}>Kredit</Text>
+                <Text style={styles.label}>Credits</Text>
                 <TextInput
-                  accessibilityLabel={`Kredit subjek ${index + 1}`}
+                  accessibilityLabel={`Credits for subject ${index + 1}`}
                   keyboardType="decimal-pad"
                   onChangeText={(value) => updateSubject(subject.id, 'credits', value)}
                   placeholder="3"
@@ -261,9 +261,9 @@ export default function CgpaScreen() {
                 />
               </View>
               <View style={styles.field}>
-                <Text style={styles.label}>Mata gred (0.00–4.00)</Text>
+                <Text style={styles.label}>Grade points (0.00–4.00)</Text>
                 <TextInput
-                  accessibilityLabel={`Mata gred subjek ${index + 1}`}
+                  accessibilityLabel={`Grade points for subject ${index + 1}`}
                   keyboardType="decimal-pad"
                   onChangeText={(value) => updateSubject(subject.id, 'gradePoint', value)}
                   placeholder="4.00"
@@ -282,7 +282,7 @@ export default function CgpaScreen() {
         ) : null}
 
         <View style={styles.resultCard}>
-          <Text style={styles.resultLabel}>CGPA TERKINI</Text>
+          <Text style={styles.resultLabel}>CURRENT CGPA</Text>
           <Text style={styles.resultValue}>
             {'cumulativeGpa' in calculation && calculation.cumulativeGpa !== undefined
               ? formatGpa(calculation.cumulativeGpa)
@@ -290,20 +290,20 @@ export default function CgpaScreen() {
           </Text>
           <View style={styles.resultDetails}>
             <Text style={styles.resultDetail}>
-              GPA semester: {'semesterGpa' in calculation && calculation.semesterGpa !== undefined
+              Semester GPA: {'semesterGpa' in calculation && calculation.semesterGpa !== undefined
                 ? formatGpa(calculation.semesterGpa)
                 : '—'}
             </Text>
             <Text style={styles.resultDetail}>
-              Jumlah kredit: {'totalCredits' in calculation && calculation.totalCredits !== undefined
+              Total credits: {'totalCredits' in calculation && calculation.totalCredits !== undefined
                 ? calculation.totalCredits
                 : '—'}
             </Text>
           </View>
         </View>
         <Text style={styles.note}>
-          Formula: (CGPA terdahulu × kredit terdahulu + jumlah mata gred semester) ÷ jumlah kredit terkumpul.
-          Masukkan nilai mata gred mengikut skala institusi anda.
+          Formula: (previous CGPA × previous credits + semester grade points) ÷ total accumulated credits.
+          Enter grade points according to your institution&apos;s scale.
         </Text>
       </ScrollView>
     </SafeAreaView>

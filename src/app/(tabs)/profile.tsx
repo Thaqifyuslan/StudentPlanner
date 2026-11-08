@@ -48,18 +48,18 @@ export default function ProfileScreen() {
             avatarUri: asset.uri,
             avatarMimeType: asset.mimeType ?? undefined,
           }));
-          setMessage('Gambar dipilih. Tekan Simpan Perubahan untuk menggunakannya.');
+          setMessage('Image selected. Tap Save Changes to apply it.');
         } else {
           await updateProfile({
             avatarUri: asset.uri,
             avatarMimeType: asset.mimeType ?? undefined,
           });
-          setMessage('Gambar profil berjaya dikemaskini.');
+          setMessage('Profile picture updated successfully.');
         }
       }
     } catch (pickerError) {
-      console.error('Gagal memilih gambar profil:', pickerError);
-      setError(pickerError instanceof Error ? pickerError.message : 'Gambar profil tidak dapat dikemas kini. Sila cuba lagi.');
+      console.error('Failed to select profile picture:', pickerError);
+      setError(pickerError instanceof Error ? pickerError.message : 'Could not update profile picture. Please try again.');
     } finally {
       setIsPickingAvatar(false);
     }
@@ -72,10 +72,10 @@ export default function ProfileScreen() {
       await updateProfile(draft);
       setDraft({});
       setIsEditing(false);
-      setMessage('Maklumat profil berjaya dikemaskini.');
+      setMessage('Profile updated successfully.');
     } catch (saveError) {
-      console.error('Gagal menyimpan profil:', saveError);
-      setError(saveError instanceof Error ? saveError.message : 'Profil tidak dapat disimpan. Sila cuba lagi.');
+      console.error('Failed to save profile:', saveError);
+      setError(saveError instanceof Error ? saveError.message : 'Could not save profile. Please try again.');
     }
   };
 
@@ -91,8 +91,8 @@ export default function ProfileScreen() {
     try {
       await signOut();
     } catch (signOutError) {
-      console.error('Gagal log keluar:', signOutError);
-      setError('Tidak dapat log keluar. Sila cuba lagi.');
+      console.error('Failed to sign out:', signOutError);
+      setError('Could not sign out. Please try again.');
     }
   };
 
@@ -103,13 +103,13 @@ export default function ProfileScreen() {
       .slice(0, 2)
       .map((part) => part[0]?.toLocaleUpperCase())
       .join('') ??
-    'P';
+    'S';
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.eyebrow}>AKAUN PELAJAR</Text>
-        <Text style={styles.title}>Profil</Text>
+        <Text style={styles.eyebrow}>STUDENT ACCOUNT</Text>
+        <Text style={styles.title}>Profile</Text>
 
         <View style={styles.profileCard}>
           <View style={styles.avatar}>
@@ -124,7 +124,7 @@ export default function ProfileScreen() {
           </View>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Pilih gambar profil dari album atau fail"
+            accessibilityLabel="Choose a profile picture from your gallery or files"
             disabled={isPickingAvatar}
             onPress={() => void pickAvatar()}
             style={({ pressed }) => [
@@ -132,34 +132,34 @@ export default function ProfileScreen() {
               (pressed || isPickingAvatar) && styles.pressed,
             ]}>
             <Text style={styles.avatarButtonText}>
-              {isPickingAvatar ? 'Memuat naik gambar…' : 'Pilih gambar dari album / fail'}
+              {isPickingAvatar ? 'Uploading image…' : 'Choose image from gallery / files'}
             </Text>
           </Pressable>
           <Text style={styles.avatarHint}>
             {isEditing
-              ? 'Gambar akan disimpan bersama perubahan profil.'
-              : 'Pilih gambar dari album telefon atau fail pada peranti.'}
+              ? 'The image will be saved with your profile changes.'
+              : 'Choose an image from your photo library or device files.'}
           </Text>
-          <Text style={styles.name}>{profile?.nama ?? profile?.name ?? 'Pelajar'}</Text>
-          <Text style={styles.email}>{profile?.email ?? 'E-mel tidak tersedia'}</Text>
+          <Text style={styles.name}>{profile?.nama ?? profile?.name ?? 'Student'}</Text>
+          <Text style={styles.email}>{profile?.email ?? 'Email unavailable'}</Text>
         </View>
 
         <View style={styles.detailsCard}>
-          <Text style={styles.sectionTitle}>Maklumat Akademik</Text>
+          <Text style={styles.sectionTitle}>Academic Information</Text>
           <ProfileField
-            label="Nama penuh"
+            label="Full name"
             value={draft.nama ?? profile?.nama ?? profile?.name ?? ''}
             editable={isEditing}
             onChangeText={(value) => setField('nama', value)}
           />
           <ProfileField
-            label="No. Matrik"
+            label="Student ID"
             value={draft.noMatrik ?? profile?.noMatrik ?? ''}
             editable={isEditing}
             onChangeText={(value) => setField('noMatrik', value)}
           />
           <ProfileField
-            label="Program / Kursus"
+            label="Program / Course"
             value={draft.kursus ?? profile?.kursus ?? ''}
             editable={isEditing}
             onChangeText={(value) => setField('kursus', value)}
@@ -172,7 +172,7 @@ export default function ProfileScreen() {
             onChangeText={(value) => setField('semester', value)}
           />
           <ProfileField
-            label="Kod Fakulti / Jabatan"
+            label="Faculty / Department Code"
             value={draft.kodFakulti ?? profile?.kodFakulti ?? ''}
             editable={isEditing}
             onChangeText={(value) => setField('kodFakulti', value)}
@@ -188,13 +188,13 @@ export default function ProfileScreen() {
               accessibilityRole="button"
               onPress={cancelEditing}
               style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}>
-              <Text style={styles.cancelText}>Batal</Text>
+              <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
               onPress={() => void saveProfile()}
               style={({ pressed }) => [styles.saveButton, pressed && styles.pressed]}>
-              <Text style={styles.saveText}>Simpan Perubahan</Text>
+              <Text style={styles.saveText}>Save Changes</Text>
             </Pressable>
           </View>
         ) : (
@@ -205,7 +205,7 @@ export default function ProfileScreen() {
               setIsEditing(true);
             }}
             style={({ pressed }) => [styles.editButton, pressed && styles.pressed]}>
-            <Text style={styles.editButtonText}>Edit Maklumat Akademik</Text>
+            <Text style={styles.editButtonText}>Edit Academic Information</Text>
           </Pressable>
         )}
 
@@ -213,7 +213,7 @@ export default function ProfileScreen() {
           accessibilityRole="button"
           onPress={() => void handleSignOut()}
           style={({ pressed }) => [styles.signOutButton, pressed && styles.pressed]}>
-          <Text style={styles.signOutText}>Log keluar</Text>
+          <Text style={styles.signOutText}>Sign Out</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>
@@ -242,13 +242,13 @@ function ProfileField({
           autoCapitalize="words"
           keyboardType={keyboardType ?? 'default'}
           onChangeText={onChangeText}
-          placeholder={`${label} belum diisi`}
+          placeholder={`${label} not provided`}
           placeholderTextColor="#737B98"
           style={styles.input}
           value={value}
         />
       ) : (
-        <Text style={styles.detailValue}>{value.trim() || 'Belum diisi'}</Text>
+        <Text style={styles.detailValue}>{value.trim() || 'Not provided'}</Text>
       )}
     </View>
   );

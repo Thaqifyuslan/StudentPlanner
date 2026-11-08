@@ -108,13 +108,13 @@ function getErrorMessage(error: unknown, fallback: string) {
 
   const details = error as Record<string, unknown>;
   if (details.code === 'PGRST116') {
-    return 'Profil akaun tidak ditemui. Jalankan semula skema Supabase dan sahkan akaun e-mel anda.';
+    return 'Account profile not found. Rerun the Supabase schema and verify your email address.';
   }
   if (details.code === 'PGRST205' || details.code === '42P01') {
-    return 'Jadual profiles belum tersedia. Jalankan supabase/schema.sql dalam Supabase SQL Editor.';
+    return 'The profiles table is unavailable. Run supabase/schema.sql in the Supabase SQL Editor.';
   }
   if (details.code === '42501' || details.status === 401 || details.status === 403) {
-    return 'Akses Supabase ditolak. Semak API key, polisi RLS dan sesi pengguna.';
+    return 'Supabase access was denied. Check the API key, RLS policies, and user session.';
   }
   if (typeof details.message === 'string') return details.message;
   return fallback;
@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [initializationError, setInitializationError] = useState<string | null>(
     isSupabaseConfigured
       ? null
-      : 'Tetapkan EXPO_PUBLIC_SUPABASE_URL dan EXPO_PUBLIC_SUPABASE_ANON_KEY untuk menyambung Supabase.',
+      : 'Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to connect to Supabase.',
   );
 
   useEffect(() => {
@@ -142,10 +142,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (active) setProfile(restoredProfile);
         }
       } catch (error) {
-        console.error('Gagal memulihkan sesi Supabase:', error);
+        console.error('Failed to restore Supabase session:', error);
         if (active) {
           setInitializationError(
-            getErrorMessage(error, 'Sesi Supabase tidak dapat dimuat. Semak konfigurasi dan cuba lagi.'),
+            getErrorMessage(error, 'Could not load the Supabase session. Check your configuration and try again.'),
           );
         }
       } finally {
@@ -171,10 +171,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setIsLoading(false);
         }
       }).catch((error: unknown) => {
-        console.error('Gagal memuat profil Supabase:', error);
+        console.error('Failed to load Supabase profile:', error);
         if (active) {
           setInitializationError(
-            getErrorMessage(error, 'Profil tidak dapat dimuat. Pastikan jadual Supabase telah disediakan.'),
+            getErrorMessage(error, 'Could not load the profile. Make sure the Supabase tables are set up.'),
           );
           setIsLoading(false);
         }
@@ -202,7 +202,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               if (active) setProfile(updatedProfile);
             })
             .catch((error: unknown) => {
-              console.error('Gagal menyegerakkan profil Supabase:', error);
+              console.error('Failed to sync Supabase profile:', error);
             });
         },
       )
@@ -254,10 +254,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         Pick<UserProfile, 'nama' | 'noMatrik' | 'kursus' | 'semester' | 'kodFakulti' | 'avatarUri'>
       > & { avatarMimeType?: string },
     ) => {
-      if (profile === null) throw new Error('Log masuk diperlukan untuk mengemaskini profil.');
+      if (profile === null) throw new Error('You must be signed in to update your profile.');
 
       const nama = updates.nama?.trim() ?? profile.nama;
-      if (!nama) throw new Error('Nama penuh diperlukan.');
+      if (!nama) throw new Error('Full name is required.');
 
       let avatarPath: string | null | undefined;
       if (updates.avatarUri !== undefined) {
@@ -271,7 +271,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             : 'jpg');
         const path = `${profile.id}/${Date.now()}.${safeExtension}`;
         const response = await fetch(uri);
-        if (!response.ok) throw new Error('Fail gambar profil tidak dapat dibaca.');
+        if (!response.ok) throw new Error('Could not read the profile picture file.');
         const fileData = await response.arrayBuffer();
         const { error: uploadError } = await supabase.storage
           .from('avatars')
@@ -340,7 +340,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === null) {
-    throw new Error('useAuth mesti digunakan di dalam AuthProvider.');
+    throw new Error('useAuth must be used within AuthProvider.');
   }
   return context;
 }

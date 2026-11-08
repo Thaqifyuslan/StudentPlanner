@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { usePlanner } from '@/contexts/planner-context';
 
-const weekdays = ['Isn', 'Sel', 'Rab', 'Kha', 'Jum', 'Sab', 'Aha'];
+const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 function toDateKey(date: Date) {
   const year = date.getFullYear();
@@ -22,7 +22,7 @@ function toDateKey(date: Date) {
 
 function formatDueDate(dateKey: string) {
   const [year, month, day] = dateKey.split('-').map(Number);
-  return new Intl.DateTimeFormat('ms-MY', {
+  return new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -51,7 +51,7 @@ export default function TugasanScreen() {
 
   const handleAddAssignment = async () => {
     if (!title.trim() || !course.trim()) {
-      setError('Tajuk tugasan dan kod subjek diperlukan.');
+      setError('Task title and course code are required.');
       return;
     }
     try {
@@ -62,14 +62,14 @@ export default function TugasanScreen() {
       setCalendarOpen(false);
       setError(null);
     } catch (saveError) {
-      console.error('Gagal menyimpan tugasan:', saveError);
+      console.error('Failed to save task:', saveError);
       const message =
         typeof saveError === 'object' &&
         saveError !== null &&
         'message' in saveError &&
         typeof saveError.message === 'string'
           ? saveError.message
-          : 'Tugasan tidak dapat disimpan. Sila cuba lagi.';
+          : 'Could not save the task. Please try again.';
       setError(message);
     }
   };
@@ -79,8 +79,8 @@ export default function TugasanScreen() {
       await toggleAssignment(id);
       setError(null);
     } catch (updateError) {
-      console.error('Gagal mengemas kini tugasan:', updateError);
-      setError('Status tugasan tidak dapat dikemas kini. Sila cuba lagi.');
+      console.error('Failed to update task:', updateError);
+      setError('Could not update task status. Please try again.');
     }
   };
 
@@ -89,8 +89,8 @@ export default function TugasanScreen() {
       await deleteAssignment(id);
       setError(null);
     } catch (deleteError) {
-      console.error('Gagal memadam tugasan:', deleteError);
-      setError('Tugasan tidak dapat dipadam. Sila cuba lagi.');
+      console.error('Failed to delete task:', deleteError);
+      setError('Could not delete the task. Please try again.');
     }
   };
 
@@ -111,25 +111,25 @@ export default function TugasanScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
-        <Text style={styles.eyebrow}>PENGURUS TUGASAN</Text>
-        <Text style={styles.title}>Tugasan</Text>
-        <Text style={styles.subtitle}>{pendingCount} tugasan belum selesai</Text>
+        <Text style={styles.eyebrow}>TASK MANAGER</Text>
+        <Text style={styles.title}>Tasks</Text>
+        <Text style={styles.subtitle}>{pendingCount} pending tasks</Text>
 
         <View style={styles.formCard}>
-          <Text style={styles.sectionTitle}>Tambah tugasan</Text>
+          <Text style={styles.sectionTitle}>Add a Task</Text>
           <TextInput
-            accessibilityLabel="Tajuk tugasan"
+            accessibilityLabel="Task title"
             onChangeText={setTitle}
-            placeholder="Tajuk tugasan"
+            placeholder="Task title"
             placeholderTextColor="#737B98"
             style={styles.input}
             value={title}
           />
           <TextInput
-            accessibilityLabel="Kod subjek tugasan"
+            accessibilityLabel="Task course code"
             autoCapitalize="characters"
             onChangeText={setCourse}
-            placeholder="Kod subjek (cth: DDWD2713)"
+            placeholder="Course code (e.g. DDWD2713)"
             placeholderTextColor="#737B98"
             style={styles.input}
             value={course}
@@ -137,7 +137,7 @@ export default function TugasanScreen() {
           <Text style={styles.inputLabel}>Due Date</Text>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Pilih due date, sekarang ${formatDueDate(dueDate)}`}
+            accessibilityLabel={`Select due date, currently ${formatDueDate(dueDate)}`}
             onPress={() => setCalendarOpen((open) => !open)}
             style={styles.dateButton}>
             <Text style={styles.dateButtonText}>{formatDueDate(dueDate)}</Text>
@@ -148,7 +148,7 @@ export default function TugasanScreen() {
               <View style={styles.calendarHeader}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Bulan sebelumnya"
+                  accessibilityLabel="Previous month"
                   onPress={() =>
                     setCalendarMonth(
                       (month) => new Date(month.getFullYear(), month.getMonth() - 1, 1),
@@ -158,14 +158,14 @@ export default function TugasanScreen() {
                   <Text style={styles.monthButtonText}>‹</Text>
                 </Pressable>
                 <Text style={styles.monthTitle}>
-                  {new Intl.DateTimeFormat('ms-MY', {
+                  {new Intl.DateTimeFormat('en-GB', {
                     month: 'long',
                     year: 'numeric',
                   }).format(calendarMonth)}
                 </Text>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Bulan seterusnya"
+                  accessibilityLabel="Next month"
                   onPress={() =>
                     setCalendarMonth(
                       (month) => new Date(month.getFullYear(), month.getMonth() + 1, 1),
@@ -194,7 +194,7 @@ export default function TugasanScreen() {
                     <Pressable
                       key={dateKey}
                       accessibilityRole="button"
-                      accessibilityLabel={`${day} ${new Intl.DateTimeFormat('ms-MY', {
+                      accessibilityLabel={`${day} ${new Intl.DateTimeFormat('en-GB', {
                         month: 'long',
                       }).format(calendarMonth)}`}
                       accessibilityState={{ selected }}
@@ -219,7 +219,7 @@ export default function TugasanScreen() {
                   setCalendarOpen(false);
                 }}
                 style={styles.todayButton}>
-                <Text style={styles.todayButtonText}>Pilih hari ini</Text>
+                <Text style={styles.todayButtonText}>Today</Text>
               </Pressable>
             </View>
           )}
@@ -227,7 +227,7 @@ export default function TugasanScreen() {
             accessibilityRole="button"
             onPress={() => void handleAddAssignment()}
             style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}>
-            <Text style={styles.primaryButtonText}>Simpan tugasan</Text>
+            <Text style={styles.primaryButtonText}>Save Task</Text>
           </Pressable>
         </View>
 
@@ -235,10 +235,10 @@ export default function TugasanScreen() {
           <Text style={styles.error}>{error ?? storageError}</Text>
         )}
 
-        <Text style={styles.sectionTitle}>Senarai tugasan</Text>
-        {isLoading ? <Text style={styles.emptyText}>Memuatkan tugasan…</Text> : null}
+        <Text style={styles.sectionTitle}>Tasks</Text>
+        {isLoading ? <Text style={styles.emptyText}>Loading tasks…</Text> : null}
         {!isLoading && assignments.length === 0 ? (
-          <Text style={styles.emptyText}>Belum ada tugasan. Tambah tugasan pertama anda di atas.</Text>
+          <Text style={styles.emptyText}>No tasks yet. Add your first task above.</Text>
         ) : null}
         {assignments.map((assignment) => {
           const isDone = assignment.status === 'DONE';
@@ -246,7 +246,7 @@ export default function TugasanScreen() {
             <View key={assignment.id} style={[styles.assignmentCard, isDone && styles.doneCard]}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`${isDone ? 'Tandakan belum selesai' : 'Tandakan selesai'}: ${assignment.title}`}
+                accessibilityLabel={`${isDone ? 'Mark as incomplete' : 'Mark as complete'}: ${assignment.title}`}
                 onPress={() => void handleToggleAssignment(assignment.id)}
                 style={styles.assignmentInfo}>
                 <Text style={[styles.assignmentTitle, isDone && styles.completedTitle]}>
@@ -259,17 +259,17 @@ export default function TugasanScreen() {
               <View style={styles.actions}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Status ${assignment.title}: ${assignment.status}`}
+                  accessibilityLabel={`${assignment.title} status: ${assignment.status}`}
                   onPress={() => void handleToggleAssignment(assignment.id)}
                   style={[styles.statusBadge, isDone ? styles.doneBadge : styles.pendingBadge]}>
                   <Text style={styles.statusText}>{assignment.status}</Text>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Padam ${assignment.title}`}
+                  accessibilityLabel={`Delete ${assignment.title}`}
                   onPress={() => void handleDeleteAssignment(assignment.id)}
                   style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}>
-                  <Text style={styles.deleteText}>Padam</Text>
+                  <Text style={styles.deleteText}>Delete</Text>
                 </Pressable>
               </View>
             </View>
