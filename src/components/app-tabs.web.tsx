@@ -6,7 +6,7 @@ import {
   TabTriggerSlotProps,
   TabListProps,
 } from 'expo-router/ui';
-import { Pressable, View, StyleSheet } from 'react-native';
+import { Pressable, ScrollView, View, StyleSheet } from 'react-native';
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 
@@ -47,11 +47,14 @@ export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps
   const { ref: _ref, ...pressableProps } = props;
 
   return (
-    <Pressable {...pressableProps} style={({ pressed }) => pressed && styles.pressed}>
+    <Pressable {...pressableProps} style={({ pressed }) => [styles.tabPressable, pressed && styles.pressed]}>
       <ThemedView
         type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
         style={styles.tabButtonView}>
-        <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
+        <ThemedText
+          type="small"
+          themeColor={isFocused ? 'text' : 'textSecondary'}
+          style={styles.tabLabel}>
           {children}
         </ThemedText>
       </ThemedView>
@@ -61,9 +64,15 @@ export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps
 
 export function CustomTabList(props: TabListProps) {
   return (
-    <View {...props} style={styles.tabListContainer}>
+    <View {...props} nativeID="pwa-tab-bar" style={styles.tabListContainer}>
       <ThemedView type="backgroundElement" style={styles.innerContainer}>
-        {props.children}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.tabScrollView}
+          contentContainerStyle={styles.tabListContent}>
+          {props.children}
+        </ScrollView>
       </ThemedView>
     </View>
   );
@@ -74,7 +83,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     width: '100%',
-    padding: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.two,
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
@@ -84,18 +95,33 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.two,
     borderRadius: Spacing.four,
+    maxWidth: MaxContentWidth,
+    overflow: 'hidden',
+  },
+  tabListContent: {
+    minWidth: '100%',
+    flexGrow: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    maxWidth: MaxContentWidth,
     gap: Spacing.one,
+  },
+  tabScrollView: {
+    width: '100%',
+  },
+  tabPressable: {
+    flexShrink: 0,
   },
   pressed: {
     opacity: 0.7,
   },
   tabButtonView: {
     paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.two,
+    paddingHorizontal: Spacing.three / 2,
     borderRadius: Spacing.three,
+  },
+  tabLabel: {
+    fontSize: 12,
+    lineHeight: 16,
   },
 });
