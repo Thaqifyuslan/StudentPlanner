@@ -44,6 +44,7 @@ type AuthContextValue = {
     updates: Partial<Pick<UserProfile, 'nama' | 'noMatrik' | 'kursus' | 'semester' | 'kodFakulti' | 'avatarUri'>>,
   ) => Promise<void>;
   signOut: () => Promise<void>;
+  clearLocalSession: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -100,7 +101,21 @@ async function loadProfile(userId: string): Promise<UserProfile> {
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
-  return error instanceof Error ? error.message : fallback;
+  if (error instanceof Error) return error.message;
+  if (typeof error !== 'object' || error === null) return fallback;
+
+  const details = error as Record<string, unknown>;
+  if (details.code === 'PGRST116') {
+    return 'Profil akaun tidak ditemui. Jalankan semula skema Supabase dan sahkan akaun e-mel anda.';
+  }
+  if (details.code === 'PGRST205' || details.code === '42P01') {
+    return 'Jadual profiles belum tersedia. Jalankan supabase/schema.sql dalam Supabase SQL Editor.';
+  }
+  if (details.code === '42501' || details.status === 401 || details.status === 403) {
+    return 'Akses Supabase ditolak. Semak API key, polisi RLS dan sesi pengguna.';
+  }
+  if (typeof details.message === 'string') return details.message;
+  return fallback;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -287,9 +302,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
   }, []);
 
+  const clearLocalSession = useCallback(async () => {
+    const { error } = await supabase.auth.signOut({ scope: 'local' });
+    if (error) throw error;
+    setProfile(null);
+    setInitializationError(null);
+    setIsLoading(false);
+  }, []);
+
   const value = useMemo(
-    () => ({ profile, isLoading, initializationError, signIn, register, updateProfile, signOut }),
-    [profile, isLoading, initializationError, signIn, register, updateProfile, signOut],
+    () => ({
+      profile,
+      isLoading,
+      initializationError,
+      signIn,
+      register,
+      updateProfile,
+      signOut,
+      clearLocalSession,
+    }),
+    [profile, isLoading, initializationError, signIn, register, updateProfile, signOut, clearLocalSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
