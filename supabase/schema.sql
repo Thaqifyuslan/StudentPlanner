@@ -31,6 +31,7 @@ create table if not exists public.tasks (
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
   tajuk text not null,
   course text not null default '',
+  tarikh_luput text not null default current_date::text,
   due_date text not null default 'Akan Datang',
   priority text not null default 'High',
   is_done boolean not null default false,
@@ -78,9 +79,40 @@ alter table public.schedules
 
 alter table public.tasks
   add column if not exists course text not null default '',
+  add column if not exists tarikh_luput text not null default current_date::text,
   add column if not exists due_date text not null default 'Akan Datang',
   add column if not exists priority text not null default 'High',
   add column if not exists is_done boolean not null default false;
+
+do $$
+declare
+  due_date_type text;
+begin
+  select data_type
+  into due_date_type
+  from information_schema.columns
+  where table_schema = 'public'
+    and table_name = 'tasks'
+    and column_name = 'tarikh_luput';
+
+  if due_date_type in ('text', 'character varying', 'character') then
+    update public.tasks
+      set tarikh_luput = to_char(current_date, 'YYYY-MM-DD')
+      where tarikh_luput is null;
+    alter table public.tasks
+      alter column tarikh_luput set default current_date::text;
+  elsif due_date_type in ('date', 'timestamp without time zone', 'timestamp with time zone') then
+    update public.tasks
+      set tarikh_luput = current_date
+      where tarikh_luput is null;
+    alter table public.tasks
+      alter column tarikh_luput set default current_date;
+  end if;
+
+  alter table public.tasks
+    alter column tarikh_luput set not null;
+end;
+$$;
 
 do $$
 begin

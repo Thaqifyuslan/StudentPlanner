@@ -11,6 +11,24 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { usePlanner } from '@/contexts/planner-context';
 
+const weekdays = ['Isn', 'Sel', 'Rab', 'Kha', 'Jum', 'Sab', 'Aha'];
+
+function toDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatDueDate(dateKey: string) {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  return new Intl.DateTimeFormat('ms-MY', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(year, month - 1, day));
+}
+
 export default function TugasanScreen() {
   const {
     assignments,
@@ -22,6 +40,12 @@ export default function TugasanScreen() {
   } = usePlanner();
   const [title, setTitle] = useState('');
   const [course, setCourse] = useState('');
+  const [dueDate, setDueDate] = useState(() => toDateKey(new Date()));
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth(), 1);
+  });
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pendingCount = assignments.filter((assignment) => assignment.status === 'Pending').length;
 
@@ -31,13 +55,22 @@ export default function TugasanScreen() {
       return;
     }
     try {
-      await addAssignment(title.trim(), course.trim());
+      await addAssignment(title.trim(), course.trim(), dueDate);
       setTitle('');
       setCourse('');
+      setDueDate(toDateKey(new Date()));
+      setCalendarOpen(false);
       setError(null);
     } catch (saveError) {
       console.error('Gagal menyimpan tugasan:', saveError);
-      setError('Tugasan tidak dapat disimpan. Sila cuba lagi.');
+      const message =
+        typeof saveError === 'object' &&
+        saveError !== null &&
+        'message' in saveError &&
+        typeof saveError.message === 'string'
+          ? saveError.message
+          : 'Tugasan tidak dapat disimpan. Sila cuba lagi.';
+      setError(message);
     }
   };
 
@@ -60,6 +93,17 @@ export default function TugasanScreen() {
       setError('Tugasan tidak dapat dipadam. Sila cuba lagi.');
     }
   };
+
+  const monthStartOffset = (calendarMonth.getDay() + 6) % 7;
+  const daysInMonth = new Date(
+    calendarMonth.getFullYear(),
+    calendarMonth.getMonth() + 1,
+    0,
+  ).getDate();
+  const calendarCells = [
+    ...Array.from({ length: monthStartOffset }, () => null),
+    ...Array.from({ length: daysInMonth }, (_, index) => index + 1),
+  ];
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -90,6 +134,95 @@ export default function TugasanScreen() {
             style={styles.input}
             value={course}
           />
+          <Text style={styles.inputLabel}>Due Date</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Pilih due date, sekarang ${formatDueDate(dueDate)}`}
+            onPress={() => setCalendarOpen((open) => !open)}
+            style={styles.dateButton}>
+            <Text style={styles.dateButtonText}>{formatDueDate(dueDate)}</Text>
+            <Text style={styles.dateButtonIcon}>▦</Text>
+          </Pressable>
+          {calendarOpen && (
+            <View style={styles.calendar}>
+              <View style={styles.calendarHeader}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Bulan sebelumnya"
+                  onPress={() =>
+                    setCalendarMonth(
+                      (month) => new Date(month.getFullYear(), month.getMonth() - 1, 1),
+                    )
+                  }
+                  style={styles.monthButton}>
+                  <Text style={styles.monthButtonText}>‹</Text>
+                </Pressable>
+                <Text style={styles.monthTitle}>
+                  {new Intl.DateTimeFormat('ms-MY', {
+                    month: 'long',
+                    year: 'numeric',
+                  }).format(calendarMonth)}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Bulan seterusnya"
+                  onPress={() =>
+                    setCalendarMonth(
+                      (month) => new Date(month.getFullYear(), month.getMonth() + 1, 1),
+                    )
+                  }
+                  style={styles.monthButton}>
+                  <Text style={styles.monthButtonText}>›</Text>
+                </Pressable>
+              </View>
+              <View style={styles.calendarGrid}>
+                {weekdays.map((weekday) => (
+                  <View key={weekday} style={styles.calendarCell}>
+                    <Text style={styles.weekdayText}>{weekday}</Text>
+                  </View>
+                ))}
+                {calendarCells.map((day, index) => {
+                  if (day === null) {
+                    return <View key={`empty-${index}`} style={styles.calendarCell} />;
+                  }
+
+                  const dateKey = toDateKey(
+                    new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), day),
+                  );
+                  const selected = dateKey === dueDate;
+                  return (
+                    <Pressable
+                      key={dateKey}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${day} ${new Intl.DateTimeFormat('ms-MY', {
+                        month: 'long',
+                      }).format(calendarMonth)}`}
+                      accessibilityState={{ selected }}
+                      onPress={() => {
+                        setDueDate(dateKey);
+                        setCalendarOpen(false);
+                      }}
+                      style={[styles.calendarCell, selected && styles.selectedDay]}>
+                      <Text style={[styles.dayText, selected && styles.selectedDayText]}>
+                        {day}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  const today = new Date();
+                  setDueDate(toDateKey(today));
+                  setCalendarMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+                  setCalendarOpen(false);
+                }}
+                style={styles.todayButton}>
+                <Text style={styles.todayButtonText}>Pilih hari ini</Text>
+              </Pressable>
+            </View>
+          )}
           <Pressable
             accessibilityRole="button"
             onPress={() => void handleAddAssignment()}
@@ -155,7 +288,24 @@ const styles = StyleSheet.create({
   subtitle: { color: '#8D94B0', fontSize: 13, marginTop: 5, marginBottom: 18 },
   formCard: { padding: 16, borderRadius: 16, backgroundColor: '#141724', marginBottom: 20 },
   sectionTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', marginBottom: 12 },
+  inputLabel: { color: '#A5B4FC', fontSize: 12, fontWeight: '600', marginBottom: 6 },
   input: { minHeight: 46, paddingHorizontal: 13, borderRadius: 10, borderWidth: 1, borderColor: '#30364B', backgroundColor: '#0A0C14', color: '#FFFFFF', fontSize: 14, marginBottom: 10 },
+  dateButton: { minHeight: 46, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 13, borderRadius: 10, borderWidth: 1, borderColor: '#30364B', backgroundColor: '#0A0C14', marginBottom: 10 },
+  dateButtonText: { color: '#FFFFFF', fontSize: 14 },
+  dateButtonIcon: { color: '#A5B4FC', fontSize: 18 },
+  calendar: { padding: 12, marginBottom: 12, borderRadius: 12, borderWidth: 1, borderColor: '#30364B', backgroundColor: '#0A0C14' },
+  calendarHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  monthButton: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: '#141724' },
+  monthButtonText: { color: '#FFFFFF', fontSize: 24, lineHeight: 28 },
+  monthTitle: { color: '#FFFFFF', fontSize: 14, fontWeight: '700', textTransform: 'capitalize' },
+  calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  calendarCell: { width: '14.2857%', height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
+  weekdayText: { color: '#8D94B0', fontSize: 11, fontWeight: '600' },
+  dayText: { color: '#D5D8E5', fontSize: 13 },
+  selectedDay: { backgroundColor: '#6C5CE7' },
+  selectedDayText: { color: '#FFFFFF', fontWeight: '700' },
+  todayButton: { alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 12, marginTop: 6 },
+  todayButtonText: { color: '#A5B4FC', fontSize: 12, fontWeight: '700' },
   primaryButton: { minHeight: 46, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: '#6C5CE7', marginTop: 3 },
   primaryButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
   assignmentCard: { flexDirection: 'row', alignItems: 'center', padding: 15, borderRadius: 14, backgroundColor: '#141724', marginBottom: 10 },

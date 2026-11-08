@@ -41,7 +41,7 @@ type PlannerContextValue = {
     course: Pick<Course, 'code' | 'name' | 'day' | 'room' | 'startTime' | 'endTime'>,
   ) => Promise<void>;
   deleteCourse: (id: string) => Promise<void>;
-  addAssignment: (title: string, course: string) => Promise<void>;
+  addAssignment: (title: string, course: string, dueDate: string) => Promise<void>;
   toggleAssignment: (id: string) => Promise<void>;
   deleteAssignment: (id: string) => Promise<void>;
 };
@@ -233,7 +233,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   );
 
   const addAssignment = useCallback(
-    async (title: string, course: string) => {
+    async (title: string, course: string, dueDate: string) => {
       if (!userId) throw new Error('Log masuk diperlukan untuk menyimpan tugasan.');
       const { data, error } = await supabase
         .from('tasks')
@@ -241,7 +241,8 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
           user_id: userId,
           tajuk: title,
           course,
-          due_date: 'Akan Datang',
+          due_date: dueDate,
+          tarikh_luput: dueDate,
           priority: 'High',
         })
         .select('id,tajuk,course,due_date,priority,is_done')
