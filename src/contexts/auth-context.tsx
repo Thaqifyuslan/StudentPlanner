@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   createContext,
   useCallback,
@@ -8,24 +7,27 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
-const PROFILE_KEY = 'user_profile';
-const DEMO_ACCOUNT_KEY = '@studentplanner_demo_account';
+const PROFILE_FIELDS = 'id,email,nama,no_matrik,kursus,semester,kod_fakulti,avatar_url';
 
 export type UserProfile = {
+  id: string;
   name: string;
   email: string;
-  nama?: string;
-  noMatrik?: string;
-  kursus?: string;
-  semester?: string;
-  kodFakulti?: string;
-  initials?: string;
+  nama: string;
+  noMatrik: string;
+  kursus: string;
+  semester: string;
+  kodFakulti: string;
+  initials: string;
+  avatarUri?: string;
 };
 
 export type StudentRegistration = {
   nama: string;
   email: string;
+  password: string;
   noMatrik: string;
   kursus: string;
   semester: string;
@@ -36,119 +38,258 @@ type AuthContextValue = {
   profile: UserProfile | null;
   isLoading: boolean;
   initializationError: string | null;
-  signIn: (email: string) => Promise<void>;
-  register: (student: StudentRegistration) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
+  register: (student: StudentRegistration) => Promise<{ requiresEmailConfirmation: boolean }>;
+  updateProfile: (
+    updates: Partial<Pick<UserProfile, 'nama' | 'noMatrik' | 'kursus' | 'semester' | 'kodFakulti' | 'avatarUri'>>,
+  ) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function isUserProfile(value: unknown): value is UserProfile {
-  if (typeof value !== 'object' || value === null) return false;
-  const profile = value as Record<string, unknown>;
-  return (
-    typeof profile.name === 'string' &&
-    typeof profile.email === 'string' &&
-    (profile.nama === undefined || typeof profile.nama === 'string') &&
-    (profile.noMatrik === undefined || typeof profile.noMatrik === 'string') &&
-    (profile.kursus === undefined || typeof profile.kursus === 'string') &&
-    (profile.semester === undefined || typeof profile.semester === 'string') &&
-    (profile.kodFakulti === undefined || typeof profile.kodFakulti === 'string') &&
-    (profile.initials === undefined || typeof profile.initials === 'string')
-  );
+function initialsFor(name: string) {
+  return name
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toLocaleUpperCase();
 }
 
-function normalizeEmail(email: string) {
-  return email.trim().toLocaleLowerCase();
+async function loadProfile(userId: string): Promise<UserProfile> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select(PROFILE_FIELDS)
+    .eq('id', userId)
+    .single();
+  if (error) throw error;
+
+  const row = data as {
+    id: string;
+    email: string;
+    nama: string;
+    no_matrik: string;
+    kursus: string;
+    semester: string;
+    kod_fakulti: string;
+    avatar_url: string | null;
+  };
+
+  let avatarUri: string | undefined;
+  if (row.avatar_url) {
+    const { data: signedUrl, error: avatarError } = await supabase.storage
+      .from('avatars')
+      .createSignedUrl(row.avatar_url, 60 * 60 * 24);
+    if (avatarError) throw avatarError;
+    avatarUri = signedUrl.signedUrl;
+  }
+
+  return {
+    id: row.id,
+    email: row.email,
+    name: row.nama,
+    nama: row.nama,
+    noMatrik: row.no_matrik,
+    kursus: row.kursus,
+    semester: row.semester,
+    kodFakulti: row.kod_fakulti,
+    initials: initialsFor(row.nama),
+    avatarUri,
+  };
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [initializationError, setInitializationError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(isSupabaseConfigured);
+  const [initializationError, setInitializationError] = useState<string | null>(
+    isSupabaseConfigured
+      ? null
+      : 'Tetapkan EXPO_PUBLIC_SUPABASE_URL dan EXPO_PUBLIC_SUPABASE_ANON_KEY untuk menyambung Supabase.',
+  );
 
   useEffect(() => {
-    let active = true;
+    if (!isSupabaseConfigured) return;
 
+    let active = true;
     const restoreSession = async () => {
       try {
-        const storedProfile = await AsyncStorage.getItem(PROFILE_KEY);
-        if (storedProfile !== null) {
-          const parsedProfile: unknown = JSON.parse(storedProfile);
-          if (!isUserProfile(parsedProfile)) {
-            throw new Error('Data profil yang disimpan tidak sah.');
-          }
-          if (active) setProfile(parsedProfile);
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        if (data.session) {
+          const restoredProfile = await loadProfile(data.session.user.id);
+          if (active) setProfile(restoredProfile);
         }
       } catch (error) {
-        console.error('Gagal memulihkan sesi pengguna:', error);
-        if (active) setInitializationError('Sesi pengguna tidak dapat dibaca. Sila mulakan semula aplikasi.');
+        console.error('Gagal memulihkan sesi Supabase:', error);
+        if (active) {
+          setInitializationError(
+            getErrorMessage(error, 'Sesi Supabase tidak dapat dimuat. Semak konfigurasi dan cuba lagi.'),
+          );
+        }
       } finally {
         if (active) setIsLoading(false);
       }
     };
 
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'INITIAL_SESSION') return;
+      if (!session) {
+        setProfile(null);
+        setInitializationError(null);
+        setIsLoading(false);
+        return;
+      }
+      void Promise.resolve().then(async () => {
+        const nextProfile = await loadProfile(session.user.id);
+        if (active) {
+          setProfile(nextProfile);
+          setInitializationError(null);
+          setIsLoading(false);
+        }
+      }).catch((error: unknown) => {
+        console.error('Gagal memuat profil Supabase:', error);
+        if (active) {
+          setInitializationError(
+            getErrorMessage(error, 'Profil tidak dapat dimuat. Pastikan jadual Supabase telah disediakan.'),
+          );
+          setIsLoading(false);
+        }
+      });
+    });
+
     void restoreSession();
     return () => {
       active = false;
+      subscription.unsubscribe();
     };
   }, []);
 
-  const signIn = useCallback(async (email: string) => {
-    const storedAccount = await AsyncStorage.getItem(DEMO_ACCOUNT_KEY);
-    if (storedAccount === null) {
-      throw new Error('Akaun demo belum didaftarkan pada peranti ini.');
-    }
+  useEffect(() => {
+    if (!profile?.id) return;
+    let active = true;
+    const channel = supabase
+      .channel(`profile:${profile.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${profile.id}` },
+        () => {
+          void loadProfile(profile.id)
+            .then((updatedProfile) => {
+              if (active) setProfile(updatedProfile);
+            })
+            .catch((error: unknown) => {
+              console.error('Gagal menyegerakkan profil Supabase:', error);
+            });
+        },
+      )
+      .subscribe();
 
-    const parsedAccount: unknown = JSON.parse(storedAccount);
-    if (!isUserProfile(parsedAccount) || normalizeEmail(parsedAccount.email) !== normalizeEmail(email)) {
-      throw new Error('E-mel tidak sepadan dengan akaun demo pada peranti ini.');
-    }
+    return () => {
+      active = false;
+      void supabase.removeChannel(channel);
+    };
+  }, [profile?.id]);
 
-    await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(parsedAccount));
-    setProfile(parsedAccount);
+  const signIn = useCallback(async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLocaleLowerCase(),
+      password,
+    });
+    if (error) throw error;
+    setProfile(await loadProfile(data.session.user.id));
+    setInitializationError(null);
   }, []);
 
   const register = useCallback(async (student: StudentRegistration) => {
     const nama = student.nama.trim();
-    const email = normalizeEmail(student.email);
-    const noMatrik = student.noMatrik.trim();
-    const kursus = student.kursus.trim();
-    const semester = student.semester.trim();
-    const kodFakulti = student.kodFakulti.trim();
-    if (!nama || !email || !noMatrik || !kursus || !semester) {
-      throw new Error('Nama, e-mel, nombor matrik, kursus dan semester diperlukan.');
-    }
-
-    const account: UserProfile = {
-      name: nama,
-      nama,
+    const email = student.email.trim().toLocaleLowerCase();
+    const { data, error } = await supabase.auth.signUp({
       email,
-      noMatrik,
-      kursus,
-      semester,
-      kodFakulti,
-      initials: nama
-        .split(/\s+/)
-        .map((part) => part[0])
-        .join('')
-        .slice(0, 2)
-        .toLocaleUpperCase(),
-    };
-
-    await AsyncStorage.setItem(DEMO_ACCOUNT_KEY, JSON.stringify(account));
-    await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(account));
-    setProfile(account);
+      password: student.password,
+      options: {
+        data: {
+          nama,
+          no_matrik: student.noMatrik.trim(),
+          kursus: student.kursus.trim(),
+          semester: student.semester.trim(),
+          kod_fakulti: student.kodFakulti.trim(),
+        },
+      },
+    });
+    if (error) throw error;
+    if (data.session) {
+      setProfile(await loadProfile(data.session.user.id));
+      setInitializationError(null);
+    }
+    return { requiresEmailConfirmation: data.session === null };
   }, []);
 
+  const updateProfile = useCallback(
+    async (
+      updates: Partial<
+        Pick<UserProfile, 'nama' | 'noMatrik' | 'kursus' | 'semester' | 'kodFakulti' | 'avatarUri'>
+      >,
+    ) => {
+      if (profile === null) throw new Error('Log masuk diperlukan untuk mengemaskini profil.');
+
+      const nama = updates.nama?.trim() ?? profile.nama;
+      if (!nama) throw new Error('Nama penuh diperlukan.');
+
+      let avatarPath: string | null | undefined;
+      if (updates.avatarUri !== undefined) {
+        const uri = updates.avatarUri;
+        const extension = uri.split(/[?#]/, 1)[0].split('.').pop()?.toLocaleLowerCase();
+        const safeExtension = extension && /^[a-z0-9]{1,5}$/.test(extension) ? extension : 'jpg';
+        const path = `${profile.id}/${Date.now()}.${safeExtension}`;
+        const response = await fetch(uri);
+        if (!response.ok) throw new Error('Fail gambar profil tidak dapat dibaca.');
+        const fileData = await response.arrayBuffer();
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(path, fileData, { upsert: false });
+        if (uploadError) throw uploadError;
+        avatarPath = path;
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({
+          nama,
+          no_matrik: updates.noMatrik?.trim() ?? profile.noMatrik,
+          kursus: updates.kursus?.trim() ?? profile.kursus,
+          semester: updates.semester?.trim() ?? profile.semester,
+          kod_fakulti: updates.kodFakulti?.trim() ?? profile.kodFakulti,
+          ...(avatarPath !== undefined ? { avatar_url: avatarPath } : {}),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', profile.id)
+        .select(PROFILE_FIELDS)
+        .single();
+      if (error) throw error;
+
+      const row = data as { id: string; avatar_url: string | null };
+      const nextProfile = await loadProfile(row.id);
+      setProfile(nextProfile);
+    },
+    [profile],
+  );
+
   const signOut = useCallback(async () => {
-    await AsyncStorage.removeItem(PROFILE_KEY);
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
     setProfile(null);
   }, []);
 
   const value = useMemo(
-    () => ({ profile, isLoading, initializationError, signIn, register, signOut }),
-    [profile, isLoading, initializationError, signIn, register, signOut],
+    () => ({ profile, isLoading, initializationError, signIn, register, updateProfile, signOut }),
+    [profile, isLoading, initializationError, signIn, register, updateProfile, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

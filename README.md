@@ -1,56 +1,26 @@
-# Welcome to your Expo app 👋
+# Student Planner
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Expo and React Native planner with Supabase Auth, Postgres, Row Level Security, and private Storage.
 
-## Get started
+## Supabase setup
 
-1. Install dependencies
+1. Create a Supabase project and open **Project Settings → API**. Copy the project URL and the publishable key (or legacy anon key).
+2. Copy `.env.example` to `.env.local` and set `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`. These client values are public; never put a `service_role` or secret key in the app.
+3. In the Supabase SQL Editor, run [`supabase/schema.sql`](./supabase/schema.sql). It creates the `profiles`, `schedules`, `tasks`, and `revisions` tables, per-user RLS policies, a profile-on-signup trigger, and private `avatars` and `revision-materials` Storage buckets.
+4. Configure email authentication under **Authentication → URL Configuration** and **Authentication → Providers**. If email confirmation is enabled, users must confirm their email before signing in.
+5. Install dependencies and start Expo:
 
    ```bash
    npm install
-   ```
-
-2. Start the app
-
-   ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+For Vercel, add both `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` to the project’s environment variables and redeploy. Restart Expo after changing local environment variables.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+The app uses the authenticated Supabase user UUID for ownership; email addresses are profile data, not authorization identifiers. RLS isolates every profile, schedule, task, revision record, and uploaded file to its owner. Revision sharing creates a temporary signed URL. Existing local-only schedule/task data is not automatically copied to the cloud. The CGPA calculator remains local because no CGPA table is included in the requested schema.
 
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Development
 
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
-
-### Other setup steps
-
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- Route files are in `src/app/` and use Expo Router.
+- Run `npx tsc --noEmit` for a TypeScript check.
+- Never commit `.env` or `.env.local`, and never use a Supabase service-role key in the client.
