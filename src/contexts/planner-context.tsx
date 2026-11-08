@@ -89,6 +89,27 @@ function mapAssignment(row: TaskRow): Assignment {
   };
 }
 
+function plannerErrorMessage(error: unknown) {
+  if (typeof error !== 'object' || error === null) {
+    return 'Data planner tidak dapat dimuat. Semak sambungan Supabase.';
+  }
+
+  const details = error as Record<string, unknown>;
+  if (details.code === '42703' || details.code === 'PGRST204') {
+    return 'Struktur jadual Supabase belum dikemas kini. Jalankan semula supabase/schema.sql dalam SQL Editor.';
+  }
+  if (details.code === 'PGRST205' || details.code === '42P01') {
+    return 'Jadual planner Supabase belum disediakan. Jalankan supabase/schema.sql dalam SQL Editor.';
+  }
+  if (details.code === '42501' || details.status === 401 || details.status === 403) {
+    return 'Akses jadual planner ditolak. Semak polisi RLS dan sesi pengguna dalam Supabase.';
+  }
+  if (typeof details.message === 'string') {
+    console.error('Ralat planner Supabase:', details.code, details.message);
+  }
+  return 'Data planner tidak dapat dimuat. Semak sambungan dan konfigurasi Supabase.';
+}
+
 export function PlannerProvider({ children }: { children: ReactNode }) {
   const { profile } = useAuth();
   const userId = profile?.id ?? null;
@@ -133,7 +154,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
         })
         .catch((error: unknown) => {
           console.error('Gagal memuat data planner dari Supabase:', error);
-          if (active) setStorageError('Data planner tidak dapat dimuat. Semak sambungan Supabase.');
+          if (active) setStorageError(plannerErrorMessage(error));
         })
         .finally(() => {
           if (active) setIsLoading(false);

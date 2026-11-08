@@ -67,6 +67,7 @@ export default function RevisionScreen() {
           .from('revisions')
           .select('id,name,file_url,type,created_at')
           .eq('user_id', profile.id)
+          .neq('file_url', '')
           .order('created_at', { ascending: false });
         if (error) throw error;
 

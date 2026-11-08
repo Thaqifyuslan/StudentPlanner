@@ -44,6 +44,42 @@ create table if not exists public.revisions (
   created_at timestamptz not null default now()
 );
 
+alter table public.profiles
+  add column if not exists updated_at timestamptz not null default now();
+
+alter table public.schedules
+  add column if not exists kod_subjek text not null default '',
+  add column if not exists nama_subjek text not null default 'Subjek lama - sila kemas kini',
+  add column if not exists bilik text not null default 'Belum ditetapkan',
+  add column if not exists masa text not null default '09:00 AM',
+  add column if not exists kod_warna text not null default '#6C5CE7';
+
+alter table public.tasks
+  add column if not exists course text not null default '',
+  add column if not exists due_date text not null default 'Akan Datang',
+  add column if not exists priority text not null default 'High',
+  add column if not exists is_done boolean not null default false;
+
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'tasks' and column_name = 'status'
+  ) then
+    execute $migration$
+      update public.tasks
+      set is_done = lower(coalesce(status::text, '')) in ('done', 'completed', 'true', 'selesai')
+      where is_done = false
+    $migration$;
+  end if;
+end;
+$$;
+
+alter table public.revisions
+  add column if not exists name text not null default 'Bahan lama',
+  add column if not exists file_url text not null default '',
+  add column if not exists type text not null default 'file';
+
 create index if not exists schedules_user_id_idx on public.schedules (user_id);
 create index if not exists tasks_user_id_idx on public.tasks (user_id);
 create index if not exists revisions_user_id_idx on public.revisions (user_id);
