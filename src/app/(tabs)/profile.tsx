@@ -17,8 +17,10 @@ export default function ProfileScreen() {
   const { profile, signOut, updateProfile } = useAuth();
   const [draft, setDraft] = useState<
     Partial<Pick<UserProfile, 'nama' | 'noMatrik' | 'kursus' | 'semester' | 'kodFakulti' | 'avatarUri'>>
+      & { avatarMimeType?: string }
   >({});
   const [isEditing, setIsEditing] = useState(false);
+  const [isPickingAvatar, setIsPickingAvatar] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,8 +29,10 @@ export default function ProfileScreen() {
   };
 
   const pickAvatar = async () => {
+    if (isPickingAvatar) return;
     setError(null);
     setMessage(null);
+    setIsPickingAvatar(true);
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
@@ -37,11 +41,27 @@ export default function ProfileScreen() {
         quality: 0.8,
       });
       if (!result.canceled && result.assets[0]) {
-        setField('avatarUri', result.assets[0].uri);
+        const asset = result.assets[0];
+        if (isEditing) {
+          setDraft((current) => ({
+            ...current,
+            avatarUri: asset.uri,
+            avatarMimeType: asset.mimeType ?? undefined,
+          }));
+          setMessage('Gambar dipilih. Tekan Simpan Perubahan untuk menggunakannya.');
+        } else {
+          await updateProfile({
+            avatarUri: asset.uri,
+            avatarMimeType: asset.mimeType ?? undefined,
+          });
+          setMessage('Gambar profil berjaya dikemaskini.');
+        }
       }
     } catch (pickerError) {
       console.error('Gagal memilih gambar profil:', pickerError);
-      setError('Gambar profil tidak dapat dipilih. Sila cuba lagi.');
+      setError(pickerError instanceof Error ? pickerError.message : 'Gambar profil tidak dapat dikemas kini. Sila cuba lagi.');
+    } finally {
+      setIsPickingAvatar(false);
     }
   };
 
@@ -92,12 +112,7 @@ export default function ProfileScreen() {
         <Text style={styles.title}>Profil</Text>
 
         <View style={styles.profileCard}>
-          <Pressable
-            accessibilityRole={isEditing ? 'button' : undefined}
-            accessibilityLabel="Pilih gambar profil dari album"
-            disabled={!isEditing}
-            onPress={() => void pickAvatar()}
-            style={({ pressed }) => [styles.avatar, pressed && styles.pressed]}>
+          <View style={styles.avatar}>
             {(draft.avatarUri ?? profile?.avatarUri) ? (
               <Image
                 source={{ uri: draft.avatarUri ?? profile?.avatarUri }}
@@ -106,8 +121,25 @@ export default function ProfileScreen() {
             ) : (
               <Text style={styles.avatarText}>{initials}</Text>
             )}
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Pilih gambar profil dari album atau fail"
+            disabled={isPickingAvatar}
+            onPress={() => void pickAvatar()}
+            style={({ pressed }) => [
+              styles.avatarButton,
+              (pressed || isPickingAvatar) && styles.pressed,
+            ]}>
+            <Text style={styles.avatarButtonText}>
+              {isPickingAvatar ? 'Memuat naik gambar…' : 'Pilih gambar dari album / fail'}
+            </Text>
           </Pressable>
-          {isEditing && <Text style={styles.avatarHint}>Tekan gambar untuk tukar dari album</Text>}
+          <Text style={styles.avatarHint}>
+            {isEditing
+              ? 'Gambar akan disimpan bersama perubahan profil.'
+              : 'Pilih gambar dari album telefon atau fail pada peranti.'}
+          </Text>
           <Text style={styles.name}>{profile?.nama ?? profile?.name ?? 'Pelajar'}</Text>
           <Text style={styles.email}>{profile?.email ?? 'E-mel tidak tersedia'}</Text>
         </View>
@@ -146,10 +178,6 @@ export default function ProfileScreen() {
             onChangeText={(value) => setField('kodFakulti', value)}
           />
         </View>
-
-        <Text style={styles.disclaimer}>
-          Profil ini disimpan secara setempat pada peranti sebagai akaun demo.
-        </Text>
 
         {error !== null && <Text style={styles.error}>{error}</Text>}
         {message !== null && <Text style={styles.success}>{message}</Text>}
@@ -250,7 +278,17 @@ const styles = StyleSheet.create({
   },
   avatarImage: { width: '100%', height: '100%' },
   avatarText: { color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
-  avatarHint: { color: '#A5B4FC', fontSize: 12, marginBottom: 10 },
+  avatarButton: {
+    minHeight: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    backgroundColor: '#252A3D',
+    marginBottom: 8,
+  },
+  avatarButtonText: { color: '#C4B5FD', fontSize: 12, fontWeight: '700' },
+  avatarHint: { color: '#8D94B0', fontSize: 11, marginBottom: 10, textAlign: 'center' },
   name: { color: '#FFFFFF', fontSize: 20, fontWeight: '700', textAlign: 'center' },
   email: { color: '#9CA3AF', fontSize: 14, marginTop: 5, textAlign: 'center' },
   detailsCard: {
@@ -280,7 +318,6 @@ const styles = StyleSheet.create({
     color: '#F1F3F9',
     fontSize: 14,
   },
-  disclaimer: { color: '#737B98', fontSize: 12, lineHeight: 18, marginTop: 16 },
   error: { color: '#FF7675', fontSize: 13, marginTop: 14 },
   success: { color: '#34D399', fontSize: 13, marginTop: 14 },
   editButton: {

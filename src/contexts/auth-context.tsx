@@ -41,7 +41,9 @@ type AuthContextValue = {
   signIn: (email: string, password: string) => Promise<void>;
   register: (student: StudentRegistration) => Promise<{ requiresEmailConfirmation: boolean }>;
   updateProfile: (
-    updates: Partial<Pick<UserProfile, 'nama' | 'noMatrik' | 'kursus' | 'semester' | 'kodFakulti' | 'avatarUri'>>,
+    updates: Partial<Pick<UserProfile, 'nama' | 'noMatrik' | 'kursus' | 'semester' | 'kodFakulti' | 'avatarUri'>> & {
+      avatarMimeType?: string;
+    },
   ) => Promise<void>;
   signOut: () => Promise<void>;
   clearLocalSession: () => Promise<void>;
@@ -250,7 +252,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (
       updates: Partial<
         Pick<UserProfile, 'nama' | 'noMatrik' | 'kursus' | 'semester' | 'kodFakulti' | 'avatarUri'>
-      >,
+      > & { avatarMimeType?: string },
     ) => {
       if (profile === null) throw new Error('Log masuk diperlukan untuk mengemaskini profil.');
 
@@ -261,14 +263,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (updates.avatarUri !== undefined) {
         const uri = updates.avatarUri;
         const extension = uri.split(/[?#]/, 1)[0].split('.').pop()?.toLocaleLowerCase();
-        const safeExtension = extension && /^[a-z0-9]{1,5}$/.test(extension) ? extension : 'jpg';
+        const extensionFromMimeType = updates.avatarMimeType?.split('/')[1];
+        const safeExtension =
+          (extension && /^[a-z0-9]{1,5}$/.test(extension) ? extension : null) ??
+          (extensionFromMimeType && /^[a-z0-9]{1,5}$/.test(extensionFromMimeType)
+            ? extensionFromMimeType
+            : 'jpg');
         const path = `${profile.id}/${Date.now()}.${safeExtension}`;
         const response = await fetch(uri);
         if (!response.ok) throw new Error('Fail gambar profil tidak dapat dibaca.');
         const fileData = await response.arrayBuffer();
         const { error: uploadError } = await supabase.storage
           .from('avatars')
-          .upload(path, fileData, { upsert: false });
+          .upload(path, fileData, {
+            contentType: updates.avatarMimeType,
+            upsert: false,
+          });
         if (uploadError) throw uploadError;
         avatarPath = path;
       }
