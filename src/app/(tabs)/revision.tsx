@@ -149,6 +149,7 @@ export default function RevisionScreen() {
       .insert({
         user_id: profile.id,
         name,
+        tajuk: name,
         file_url: storagePath,
         type,
       })
@@ -200,9 +201,18 @@ export default function RevisionScreen() {
       await action();
     } catch (error) {
       console.error('Failed to select revision material:', error);
-      setMessage(
+      const errorMessage =
         error instanceof Error
-          ? `Upload failed: ${error.message}`
+          ? error.message
+          : typeof error === 'object' &&
+              error !== null &&
+              'message' in error &&
+              typeof error.message === 'string'
+            ? error.message
+            : null;
+      setMessage(
+        errorMessage
+          ? `Upload failed: ${errorMessage}`
           : 'Upload failed. Please try again.',
       );
     } finally {

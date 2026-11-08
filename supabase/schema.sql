@@ -42,6 +42,7 @@ create table if not exists public.revisions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
   name text not null,
+  tajuk text not null default '',
   file_url text not null,
   type text not null check (type in ('image', 'file')),
   created_at timestamptz not null default now()
@@ -131,6 +132,7 @@ $$;
 
 alter table public.revisions
   add column if not exists name text not null default 'Bahan lama',
+  add column if not exists tajuk text not null default '',
   add column if not exists file_url text not null default '',
   add column if not exists type text not null default 'file';
 
