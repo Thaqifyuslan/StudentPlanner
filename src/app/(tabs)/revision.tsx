@@ -1,5 +1,4 @@
 import * as DocumentPicker from 'expo-document-picker';
-import * as ImagePicker from 'expo-image-picker';
 import { SymbolView } from 'expo-symbols';
 import * as Sharing from 'expo-sharing';
 import { useEffect, useState } from 'react';
@@ -29,11 +28,9 @@ type MaterialItem = {
   date: string;
 };
 
-type IconName = 'camera' | 'images' | 'file' | 'share' | 'upload' | 'delete';
+type IconName = 'file' | 'share' | 'upload' | 'delete';
 
 const iconNames = {
-  camera: { ios: 'camera', android: 'photo_camera', web: 'photo_camera' },
-  images: { ios: 'photo.on.rectangle', android: 'photo_library', web: 'photo_library' },
   file: { ios: 'doc.text', android: 'description', web: 'description' },
   share: { ios: 'square.and.arrow.up', android: 'share', web: 'share' },
   upload: { ios: 'icloud.and.arrow.up', android: 'cloud_upload', web: 'cloud_upload' },
@@ -120,14 +117,23 @@ export default function RevisionScreen() {
 
   const addMaterial = async (
     uri: string,
-    type: MaterialItem['type'],
     name: string,
     mimeType?: string | null,
+    file?: Blob,
   ) => {
     if (!profile) throw new Error('You must be signed in to upload materials.');
-    const response = await fetch(uri);
-    if (!response.ok) throw new Error('Could not read the selected file.');
-    const fileData = await response.arrayBuffer();
+    const isImage =
+      mimeType?.startsWith('image/') === true ||
+      /\.(avif|bmp|gif|heic|heif|jpe?g|png|tiff?|webp)$/i.test(name);
+    const type: MaterialItem['type'] = isImage ? 'image' : 'file';
+    let fileData: Blob | ArrayBuffer;
+    if (Platform.OS === 'web' && file) {
+      fileData = file;
+    } else {
+      const response = await fetch(uri);
+      if (!response.ok) throw new Error(`Could not read the selected file (HTTP ${response.status}).`);
+      fileData = await response.arrayBuffer();
+    }
     const nameExtension = name.includes('.') ? name.split('.').pop()?.toLocaleLowerCase() : undefined;
     const mimeExtension = mimeType?.split('/')[1]?.split(';')[0]?.toLocaleLowerCase();
     const extension = nameExtension ?? mimeExtension;
@@ -194,56 +200,27 @@ export default function RevisionScreen() {
       await action();
     } catch (error) {
       console.error('Failed to select revision material:', error);
-      setMessage('Could not open the file picker. Please try again.');
+      setMessage(
+        error instanceof Error
+          ? `Upload failed: ${error.message}`
+          : 'Upload failed. Please try again.',
+      );
     } finally {
       setIsBusy(false);
     }
   };
 
-  const pickFromGallery = () =>
-    runPickerAction(async () => {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
-        await addMaterial(asset.uri, 'image', asset.fileName ?? 'Photo from library', asset.mimeType);
-      }
-    });
-
-  const takePhoto = () =>
-    runPickerAction(async () => {
-      if (Platform.OS !== 'web') {
-        const permission = await ImagePicker.requestCameraPermissionsAsync();
-        if (!permission.granted) {
-          setMessage('Camera permission is required to take a photo of your notes.');
-          return;
-        }
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
-        await addMaterial(asset.uri, 'image', asset.fileName ?? 'Photo from camera', asset.mimeType);
-      }
-    });
-
-  const pickDocument = () =>
+  const pickUpload = () =>
     runPickerAction(async () => {
       const result = await DocumentPicker.getDocumentAsync({
-        type: '*/*',
+        type: ['image/*', '*/*'],
         copyToCacheDirectory: true,
+        base64: false,
       });
 
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
-        await addMaterial(asset.uri, 'file', asset.name, asset.mimeType);
+        await addMaterial(asset.uri, asset.name, asset.mimeType, asset.file);
       }
     });
 
@@ -330,22 +307,10 @@ export default function RevisionScreen() {
 
       <View style={styles.uploadOptions}>
         <UploadButton
-          icon="camera"
-          label="Camera"
+          icon="upload"
+          label="Upload"
           disabled={isBusy}
-          onPress={() => void takePhoto()}
-        />
-        <UploadButton
-          icon="images"
-          label="Gallery"
-          disabled={isBusy}
-          onPress={() => void pickFromGallery()}
-        />
-        <UploadButton
-          icon="file"
-          label="Files"
-          disabled={isBusy}
-          onPress={() => void pickDocument()}
+          onPress={() => void pickUpload()}
         />
       </View>
 
@@ -445,22 +410,19 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: 'bold', color: '#FFFFFF' },
   subtitle: { fontSize: 12, color: '#9CA3AF', marginTop: 4, lineHeight: 18 },
   uploadOptions: {
-    flexDirection: 'row',
-    gap: 8,
     paddingHorizontal: 20,
     marginBottom: 8,
   },
   optionButton: {
-    flex: 1,
     minHeight: 46,
     backgroundColor: '#1E1E2E',
     paddingVertical: 10,
-    paddingHorizontal: 8,
+    paddingHorizontal: 16,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    gap: 6,
+    gap: 8,
   },
   optionText: { color: '#FFFFFF', fontSize: 12, fontWeight: '600' },
   message: { color: '#A5B4FC', fontSize: 12, lineHeight: 18, paddingHorizontal: 20, paddingTop: 8 },
