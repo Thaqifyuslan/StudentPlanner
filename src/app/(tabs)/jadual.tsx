@@ -11,12 +11,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { usePlanner } from '@/contexts/planner-context';
 
+const timeOptions = Array.from({ length: 16 }, (_, index) => {
+  const hour = index + 7;
+  return `${String(hour).padStart(2, '0')}:00`;
+});
+
 export default function JadualScreen() {
   const { courses, isLoading, storageError, addCourse, deleteCourse } = usePlanner();
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [day, setDay] = useState('');
   const [room, setRoom] = useState('');
+  const [startTime, setStartTime] = useState('09:00');
+  const [endTime, setEndTime] = useState('10:00');
+  const [openTimePicker, setOpenTimePicker] = useState<'start' | 'end' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleAddCourse = async () => {
@@ -31,15 +39,27 @@ export default function JadualScreen() {
         name: name.trim(),
         day: day.trim() || 'Isnin',
         room: room.trim() || 'Lab 1',
+        startTime,
+        endTime,
       });
       setCode('');
       setName('');
       setDay('');
       setRoom('');
+      setStartTime('09:00');
+      setEndTime('10:00');
+      setOpenTimePicker(null);
       setError(null);
     } catch (saveError) {
       console.error('Gagal menyimpan subjek:', saveError);
-      setError('Subjek tidak dapat disimpan. Sila cuba lagi.');
+      const message =
+        typeof saveError === 'object' &&
+        saveError !== null &&
+        'message' in saveError &&
+        typeof saveError.message === 'string'
+          ? saveError.message
+          : 'Subjek tidak dapat disimpan. Sila cuba lagi.';
+      setError(message);
     }
   };
 
@@ -97,6 +117,82 @@ export default function JadualScreen() {
             style={styles.input}
             value={room}
           />
+          <View style={styles.timePickerGroup}>
+            <Text style={styles.inputLabel}>Masa mula</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Pilih masa mula, sekarang ${startTime}`}
+              onPress={() => setOpenTimePicker(openTimePicker === 'start' ? null : 'start')}
+              style={styles.timePickerButton}>
+              <Text style={styles.timePickerButtonText}>{startTime}</Text>
+            </Pressable>
+            {openTimePicker === 'start' && (
+              <View style={styles.timeOptions}>
+                {timeOptions.slice(0, -1).map((time) => (
+                  <Pressable
+                    key={time}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: startTime === time }}
+                    onPress={() => {
+                      setStartTime(time);
+                      if (endTime <= time) {
+                        const nextTime = timeOptions.find((option) => option > time);
+                        if (nextTime) setEndTime(nextTime);
+                      }
+                      setOpenTimePicker(null);
+                    }}
+                    style={[
+                      styles.timeOption,
+                      startTime === time && styles.selectedTimeOption,
+                    ]}>
+                    <Text
+                      style={[
+                        styles.timeOptionText,
+                        startTime === time && styles.selectedTimeOptionText,
+                      ]}>
+                      {time}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </View>
+          <View style={styles.timePickerGroup}>
+            <Text style={styles.inputLabel}>Masa tamat</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Pilih masa tamat, sekarang ${endTime}`}
+              onPress={() => setOpenTimePicker(openTimePicker === 'end' ? null : 'end')}
+              style={styles.timePickerButton}>
+              <Text style={styles.timePickerButtonText}>{endTime}</Text>
+            </Pressable>
+            {openTimePicker === 'end' && (
+              <View style={styles.timeOptions}>
+                {timeOptions.filter((time) => time > startTime).map((time) => (
+                  <Pressable
+                    key={time}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: endTime === time }}
+                    onPress={() => {
+                      setEndTime(time);
+                      setOpenTimePicker(null);
+                    }}
+                    style={[
+                      styles.timeOption,
+                      endTime === time && styles.selectedTimeOption,
+                    ]}>
+                    <Text
+                      style={[
+                        styles.timeOptionText,
+                        endTime === time && styles.selectedTimeOptionText,
+                      ]}>
+                      {time}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </View>
           <Pressable
             accessibilityRole="button"
             onPress={() => void handleAddCourse()}
@@ -120,7 +216,6 @@ export default function JadualScreen() {
               <Text style={[styles.courseCode, { color: course.color }]}>{course.code}</Text>
               <Text style={styles.courseName}>{course.name}</Text>
               <Text style={styles.courseMeta}>{course.day} • {course.time} • {course.room}</Text>
-              <Text style={styles.courseMeta}>{course.lecturer}</Text>
             </View>
             <Pressable
               accessibilityLabel={`Padam ${course.name}`}
@@ -144,6 +239,15 @@ const styles = StyleSheet.create({
   formCard: { padding: 16, borderRadius: 16, backgroundColor: '#141724', marginBottom: 20 },
   sectionTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', marginBottom: 12 },
   input: { minHeight: 46, paddingHorizontal: 13, borderRadius: 10, borderWidth: 1, borderColor: '#30364B', backgroundColor: '#0A0C14', color: '#FFFFFF', fontSize: 14, marginBottom: 10 },
+  timePickerGroup: { marginBottom: 10 },
+  inputLabel: { color: '#A5B4FC', fontSize: 12, fontWeight: '600', marginBottom: 6 },
+  timePickerButton: { minHeight: 46, justifyContent: 'center', paddingHorizontal: 13, borderRadius: 10, borderWidth: 1, borderColor: '#30364B', backgroundColor: '#0A0C14' },
+  timePickerButtonText: { color: '#FFFFFF', fontSize: 14 },
+  timeOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, padding: 10, marginTop: 6, borderRadius: 10, backgroundColor: '#0A0C14', borderWidth: 1, borderColor: '#30364B' },
+  timeOption: { minWidth: 64, minHeight: 36, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8, borderRadius: 8, backgroundColor: '#141724' },
+  selectedTimeOption: { backgroundColor: '#6C5CE7' },
+  timeOptionText: { color: '#D5D8E5', fontSize: 12, fontWeight: '600' },
+  selectedTimeOptionText: { color: '#FFFFFF' },
   primaryButton: { minHeight: 46, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: '#6C5CE7', marginTop: 3 },
   primaryButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
   courseCard: { flexDirection: 'row', alignItems: 'center', padding: 15, borderRadius: 14, borderLeftWidth: 4, backgroundColor: '#141724', marginBottom: 10 },

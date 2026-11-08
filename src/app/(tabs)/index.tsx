@@ -109,7 +109,7 @@ export default function HomeScreen() {
                 <Text style={styles.mutedText}>{course.time}</Text>
               </View>
               <Text style={styles.courseName}>{course.name}</Text>
-              <Text style={styles.mutedText}>{course.room} • {course.lecturer}</Text>
+              <Text style={styles.mutedText}>{course.room}</Text>
             </View>
           ))
         ) : (

@@ -17,8 +17,9 @@ export type Course = {
   name: string;
   day: string;
   time: string;
+  startTime: string;
+  endTime: string;
   room: string;
-  lecturer: string;
   color: string;
 };
 
@@ -36,7 +37,9 @@ type PlannerContextValue = {
   assignments: Assignment[];
   isLoading: boolean;
   storageError: string | null;
-  addCourse: (course: Pick<Course, 'code' | 'name' | 'day' | 'room'>) => Promise<void>;
+  addCourse: (
+    course: Pick<Course, 'code' | 'name' | 'day' | 'room' | 'startTime' | 'endTime'>,
+  ) => Promise<void>;
   deleteCourse: (id: string) => Promise<void>;
   addAssignment: (title: string, course: string) => Promise<void>;
   toggleAssignment: (id: string) => Promise<void>;
@@ -47,10 +50,10 @@ type ScheduleRow = {
   id: string;
   kod_subjek: string;
   nama_subjek: string;
-  pensyarah: string;
   bilik: string;
   hari: string;
-  masa: string;
+  masa_mula: string;
+  masa_tamat: string;
   kod_warna: string;
 };
 
@@ -70,10 +73,11 @@ function mapCourse(row: ScheduleRow): Course {
     id: row.id,
     code: row.kod_subjek,
     name: row.nama_subjek,
-    lecturer: row.pensyarah,
     room: row.bilik,
     day: row.hari,
-    time: row.masa,
+    startTime: row.masa_mula,
+    endTime: row.masa_tamat,
+    time: `${row.masa_mula} - ${row.masa_tamat}`,
     color: row.kod_warna,
   };
 }
@@ -122,7 +126,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
     const [scheduleResult, taskResult] = await Promise.all([
       supabase
         .from('schedules')
-        .select('id,kod_subjek,nama_subjek,pensyarah,bilik,hari,masa,kod_warna')
+        .select('id,kod_subjek,nama_subjek,bilik,hari,masa_mula,masa_tamat,kod_warna')
         .eq('user_id', activeUserId)
         .order('created_at', { ascending: true }),
       supabase
@@ -183,21 +187,27 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   }, [refresh, userId]);
 
   const addCourse = useCallback(
-    async (course: Pick<Course, 'code' | 'name' | 'day' | 'room'>) => {
+    async (
+      course: Pick<Course, 'code' | 'name' | 'day' | 'room' | 'startTime' | 'endTime'>,
+    ) => {
       if (!userId) throw new Error('Log masuk diperlukan untuk menyimpan jadual.');
       const { data, error } = await supabase
         .from('schedules')
         .insert({
           user_id: userId,
+          kod_kursus: course.code,
+          nama_kursus: course.name,
           kod_subjek: course.code,
           nama_subjek: course.name,
-          pensyarah: 'Pensyarah',
+          pensyarah: '',
           bilik: course.room,
           hari: course.day,
-          masa: '09:00 AM',
+          masa: `${course.startTime} - ${course.endTime}`,
+          masa_mula: course.startTime,
+          masa_tamat: course.endTime,
           kod_warna: '#6C5CE7',
         })
-        .select('id,kod_subjek,nama_subjek,pensyarah,bilik,hari,masa,kod_warna')
+        .select('id,kod_subjek,nama_subjek,bilik,hari,masa_mula,masa_tamat,kod_warna')
         .single();
       if (error) throw error;
       const savedCourse = mapCourse(data as ScheduleRow);

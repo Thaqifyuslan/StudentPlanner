@@ -20,6 +20,8 @@ create table if not exists public.schedules (
   bilik text not null default 'Lab 1',
   hari text not null,
   masa text not null default '09:00 AM',
+  masa_mula text not null default '09:00',
+  masa_tamat text not null default '10:00',
   kod_warna text not null default '#6C5CE7',
   created_at timestamptz not null default now()
 );
@@ -48,11 +50,31 @@ alter table public.profiles
   add column if not exists updated_at timestamptz not null default now();
 
 alter table public.schedules
+  add column if not exists kod_kursus text not null default '',
+  add column if not exists nama_kursus text not null default '',
   add column if not exists kod_subjek text not null default '',
   add column if not exists nama_subjek text not null default 'Subjek lama - sila kemas kini',
+  add column if not exists masa_mula text not null default '09:00',
+  add column if not exists masa_tamat text not null default '10:00',
   add column if not exists bilik text not null default 'Belum ditetapkan',
   add column if not exists masa text not null default '09:00 AM',
   add column if not exists kod_warna text not null default '#6C5CE7';
+
+alter table public.schedules
+  alter column kod_kursus set default '',
+  alter column nama_kursus set default '',
+  alter column masa_mula set default '09:00',
+  alter column masa_tamat set default '10:00';
+
+update public.schedules
+set kod_kursus = coalesce(kod_kursus, ''),
+    nama_kursus = coalesce(nama_kursus, ''),
+    masa_mula = coalesce(masa_mula, '09:00'),
+    masa_tamat = coalesce(masa_tamat, '10:00');
+
+alter table public.schedules
+  alter column masa_mula set not null,
+  alter column masa_tamat set not null;
 
 alter table public.tasks
   add column if not exists course text not null default '',
