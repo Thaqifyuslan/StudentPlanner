@@ -145,7 +145,7 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0A0C14' },
-  content: { width: '100%', maxWidth: 760, alignSelf: 'center', padding: 20, paddingBottom: 40 },
+  content: { width: '100%', maxWidth: 760, alignSelf: 'center', padding: 20, paddingBottom: 120 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
   headerText: { flex: 1, minWidth: 0, paddingRight: 12 },
   greeting: { color: '#A5B4FC', fontSize: 11, fontWeight: '800', letterSpacing: 1.4 },

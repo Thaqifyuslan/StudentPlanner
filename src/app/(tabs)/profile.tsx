@@ -462,7 +462,14 @@ function ProfileField({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0A0C14' },
-  content: { flexGrow: 1, width: '100%', maxWidth: 760, alignSelf: 'center', padding: 20 },
+  content: {
+    flexGrow: 1,
+    width: '100%',
+    maxWidth: 760,
+    alignSelf: 'center',
+    padding: 20,
+    paddingBottom: 132,
+  },
   eyebrow: { color: '#A5B4FC', fontSize: 11, fontWeight: '800', letterSpacing: 1.4 },
   title: { color: '#F1F3F9', fontSize: 28, fontWeight: '700', marginTop: 6, marginBottom: 20 },
   profileCard: {

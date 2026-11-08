@@ -6,7 +6,7 @@ import {
   TabTriggerSlotProps,
   TabListProps,
 } from 'expo-router/ui';
-import { Pressable, ScrollView, View, StyleSheet } from 'react-native';
+import { Pressable, View, StyleSheet } from 'react-native';
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 
@@ -52,6 +52,9 @@ export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps
         type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
         style={styles.tabButtonView}>
         <ThemedText
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
           type="small"
           themeColor={isFocused ? 'text' : 'textSecondary'}
           style={styles.tabLabel}>
@@ -66,13 +69,9 @@ export function CustomTabList(props: TabListProps) {
   return (
     <View {...props} nativeID="pwa-tab-bar" style={styles.tabListContainer}>
       <ThemedView type="backgroundElement" style={styles.innerContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.tabScrollView}
-          contentContainerStyle={styles.tabListContent}>
+        <View style={styles.tabListContent}>
           {props.children}
-        </ScrollView>
+        </View>
       </ThemedView>
     </View>
   );
@@ -99,29 +98,29 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   tabListContent: {
-    minWidth: '100%',
-    flexGrow: 1,
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.one,
-  },
-  tabScrollView: {
-    width: '100%',
   },
   tabPressable: {
-    flexShrink: 0,
+    flex: 1,
+    minWidth: 0,
   },
   pressed: {
     opacity: 0.7,
   },
   tabButtonView: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'center',
     paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.three / 2,
+    paddingHorizontal: Spacing.one,
     borderRadius: Spacing.three,
   },
   tabLabel: {
-    fontSize: 12,
+    width: '100%',
+    fontSize: 11,
     lineHeight: 16,
+    textAlign: 'center',
   },
 });
