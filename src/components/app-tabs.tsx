@@ -19,12 +19,20 @@ export default function AppTabs() {
           renderingMode="template"
         />
       </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="revision">
+        <NativeTabs.Trigger.Label>Revision</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={require('@/assets/images/tabIcons/explore.png')}
+          sf={{ default: 'book.closed', selected: 'book.closed.fill' }}
+          md="menu_book"
           renderingMode="template"
+        />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="profile">
+        <NativeTabs.Trigger.Label>Profil</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'person.crop.circle', selected: 'person.crop.circle.fill' }}
+          md="account_circle"
         />
       </NativeTabs.Trigger>
     </NativeTabs>

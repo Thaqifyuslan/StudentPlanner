@@ -1,18 +1,83 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { useEffect } from 'react';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { StyleSheet, Text, useColorScheme, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { AuthProvider, useAuth } from '@/contexts/auth-context';
 
 SplashScreen.preventAutoHideAsync();
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+function AppNavigator() {
+  const { profile, isLoading, initializationError } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoading || initializationError) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+    if (!profile && !inAuthGroup) {
+      router.replace('/(auth)/login');
+    } else if (profile && inAuthGroup) {
+      router.replace('/(tabs)');
+    }
+  }, [initializationError, isLoading, profile, router, segments]);
+
+  if (isLoading) return <View style={styles.stateContainer} />;
+
+  if (initializationError) {
+    return (
+      <View style={styles.stateContainer}>
+        <Text style={styles.errorTitle}>Sesi tidak dapat dimuat</Text>
+        <Text style={styles.errorMessage}>{initializationError}</Text>
+      </View>
+    );
+  }
+
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="(auth)" />
+    </Stack>
   );
 }
+
+export default function RootLayout() {
+  const colorScheme = useColorScheme();
+  return (
+    <SafeAreaProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <AuthProvider>
+          <StatusBar style="light" />
+          <AnimatedSplashOverlay />
+          <AppNavigator />
+        </AuthProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  stateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    backgroundColor: '#0A0C14',
+  },
+  errorTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  errorMessage: {
+    color: '#A0A5BD',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+});

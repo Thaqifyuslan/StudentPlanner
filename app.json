@@ -17,7 +17,8 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.thaqifyuslan.StudentPlanner"
     },
     "web": {
       "output": "static",
@@ -32,11 +33,30 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
-      ]
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Student Planner memerlukan akses kepada gambar yang anda pilih untuk nota revision.",
+          "cameraPermission": "Student Planner memerlukan akses kamera untuk mengambil gambar nota.",
+          "microphonePermission": false
+        }
+      ],
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "00a5ffa7-0591-4dae-9cd8-544c239343c4"
+      }
     }
   }
 }
